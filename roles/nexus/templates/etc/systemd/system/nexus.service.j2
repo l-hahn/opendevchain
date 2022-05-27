@@ -1,0 +1,16 @@
+[Unit]
+Description=nexus service
+After=network.target
+  
+[Service]
+Type=forking
+LimitNOFILE=65536
+Environment="JAVA_HOME={{ nexus_java_home }}"
+ExecStart={{ nexus_link }}/bin/nexus start
+ExecStop={{ nexus_link }}/bin/nexus stop
+User={{ nexus_usr }}
+Restart=on-abort
+TimeoutSec=600
+  
+[Install]
+WantedBy=multi-user.target

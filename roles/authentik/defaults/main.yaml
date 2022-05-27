@@ -1,0 +1,40 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+domain_external: "my-domain.tld"
+
+
+authentik_dir: "{{ cloud_apps }}/authentik"
+
+authentik_version: 2022.5
+authentik_source: https://goauthentik.io/version
+authentik_target: docker-compose.yml
+
+authentik_db:
+  type: pgsql
+  name: authentik_db
+  user: authentik_dbu
+  pass: authentik_dbpw
+  port: 5432
+  host: localhost
+
+authentik_http_port: 9080
+authentik_https_port: 9443
+
+authentik_secret_key: MyVerySecretKey!
+authentik_loglevel: info
+
+authentik_admin_pass: VeryNicePassword!
+authentik_admin_token:
+
+authentik_stmp_host: "mail.{{ domain_external }}"
+authentik_stmp_port: 25
+authentik_smtp_user: "admin@{{ domain_external }}"
+authentik_smtp_pass: VeryNicePassword!
+authentik_smtp_from: "{{ authentik_smtp_user }}"
+
+
+authentik_footer:
+#  - name: Link Name
+#    href: https://goauthentik.io

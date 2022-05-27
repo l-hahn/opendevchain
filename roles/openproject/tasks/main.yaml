@@ -1,0 +1,45 @@
+---
+- name: install requirements for openproject
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg2
+      - software-properties-common
+      - curl
+
+- name: install openproject repository key
+  apt_key: 
+    url: https://dl.packager.io/srv/opf/openproject/key
+    state: present
+
+
+- name: install openproject repository
+  get_url:
+    url: https://dl.packager.io/srv/opf/openproject/stable/{{ openproject_major }}/installer/{{ ansible_distribution | lower }}/{{ ansible_distribution_major_version }}.repo
+    dest: /etc/apt/sources.list.d/openproject.list
+    owner: root
+    group: root
+    mode: 644
+    force: yes
+
+- name: install openproject
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg: openproject
+  register: openproject_install
+
+- name: template installation file
+  template:
+    src: etc/openproject/installer.dat.j2
+    dest: /etc/openproject/installer.dat
+    owner: openproject
+    group: openproject
+    mode: 0640
+  notify: install openproject
+  when: openproject_install.changed

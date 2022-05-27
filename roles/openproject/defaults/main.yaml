@@ -1,0 +1,22 @@
+---
+cloud_update: false
+domain_external: my-domain.tld
+
+openproject_major: 12
+
+openproject_db:
+  type: pgsql
+  name: openproject_db
+  user: openproject_dbu
+  pass: openproject_dbpw
+  port: 5432
+  host: localhost
+
+openproject_mail_smtp_host: "mail.{{ domain_external }}"
+openproject_mail_smtp_port: 25
+openproject_mail_smtp_user: "openproject@{{ domain_external }}"
+openproject_mail_smtp_pass: ThisCouldBeYourAd!
+openproject_mail_smtp_domain: "{{ openproject_mail_smtp_host }}"
+openproject_mail_admin: "admin@{{ domain_external }}"
+
+openproject_domain: "localhost"

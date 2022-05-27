@@ -1,0 +1,23 @@
+---
+- name: restart redis
+  systemd:
+    name: redis
+    state: restarted
+
+- name: setup notify_push
+  command:
+    chdir: "{{ ncloud_dir }}"
+    cmd: "php occ notify_push:setup https://{{ ncloud_domain[0] }}/push"
+  become: yes
+  become_user: "{{ www_group }}"
+
+- name: restart notify_push
+  systemd:
+    name: notify_push
+    state: restarted
+    daemon_reload: yes
+
+- name: restart coturn
+  systemd:
+    name: coturn
+    state: restarted

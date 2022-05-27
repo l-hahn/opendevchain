@@ -1,0 +1,3 @@
+---
+mailcow_folder: "{{ cloud_apps }}/mailcow"
+mailcow_ssl_path: "{{ mailcow_folder }}/data/assets/ssl"

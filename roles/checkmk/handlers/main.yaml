@@ -1,0 +1,10 @@
+---
+- name: restart omd
+  systemd:
+    name: omd
+    state: restarted
+
+- name: restart xinetd
+  systemd:
+    name: xinetd
+    state: restarted

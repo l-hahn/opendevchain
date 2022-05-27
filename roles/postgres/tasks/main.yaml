@@ -1,0 +1,41 @@
+---
+- name: install requirements for postgresql
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg2
+      - software-properties-common
+      - curl
+
+- name: setup PostgreSQL repository
+  copy:
+    content: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_lsb.codename }}-pgdg main"
+    dest: "/etc/apt/sources.list.d/pgdg.list"
+
+- name: setup PostgreSQL repository signing key
+  apt_key: 
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: install PostgreSQL packages
+  apt:
+    name: "{{ pkg }}"
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    update_cache: yes
+  loop: 
+    - "{{ postgresql_version }}"
+  loop_control:
+    loop_var: pkg
+    label: "{{ pkg }}"
+
+- name: Setup databases based on PostgreSQL conf
+  include_tasks: setup_db.yaml
+  loop: "{{ db_configs | json_query('[?type==`pgsql`]') }}"
+  loop_control:
+    loop_var: db
+    label: "{% if 'dbname' in db %}{{ db.dbname }}{% elif 'dbuser' in db %}{{ db.dbuser }}{% else %}::pass_redacted::{% endif %}"

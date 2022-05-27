@@ -1,0 +1,48 @@
+---
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - mariadb
+    - php
+    - nginx
+    - wordpress
+    - checkmk
+
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+
+
+    # Websites
+    web_sites: "{{ wp_web_sites }}"
+
+    # Databases
+    db_configs: "{{ web_sites | json_query('[*].db') }}"
+
+    # Nginx
+    nginx_conf_http_local:
+      - |
+        upstream php {
+          server unix:/run/php/php{{ php_version }}-fpm.sock;
+        }
+    nginx_conf_http: "{{ nginx_conf_http_local }}"
+
+    # Backup
+    backup_dbs:
+      - "{{ db_configs | json_query('[*].{type: type, name: name}') }}"
+    backup_targets:
+      db: "{{ backup_dbs | flatten }}"
+      file:
+        - "/app/wordpress"
+        - "/etc/letsencrypt"
+
+  vars_files:
+    - "group_vars/environments.yaml"
+    - "group_vars/wordpress.yaml"

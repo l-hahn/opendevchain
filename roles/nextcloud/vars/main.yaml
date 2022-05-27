@@ -1,0 +1,13 @@
+---
+ncusr: "ncloud"
+ncgrp: "{{ ncusr }}"
+
+ncloud_dir: "{{ cloud_apps }}/nextcloud"
+
+redis_socket: "/var/run/redis/redis-server.sock"
+
+ncloud_notify_trusted_proxies:
+  - "127.0.0.1"
+  - "::1"
+  - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+  - "{{ hostvars[inventory_hostname]['ansible_default_ipv6']['address'] }}"

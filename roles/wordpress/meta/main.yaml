@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: wordpress
+  namespace: hahn-cloud
+  author: Lars Hahn
+  company: Data Learning
+  license: MIT
+  description: Role to setup wordpress; shoudld be used in combination with an DB-, HTTP-Server and letsencrypt.
+  min_ansible_version: 2.7
+  platforms:
+    - name: Debian
+      versions:
+        - 10
+  galaxy_tags:
+    - wordpress
+dependencies:
+  - mariadb
+  - php
+  - nginx

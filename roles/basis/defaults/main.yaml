@@ -1,0 +1,77 @@
+---
+cloud_update: false
+cloud_name: cloud
+cloud_home: "/opt/{{ cloud_name }}"
+cloud_type: "cloud"
+cloud_env: production
+cloud_env_path: "{{ cloud_home }}/{{ cloud_env }}"
+cloud_host_group: server
+cloud_control_version: 1.0.0
+cloud_control_name: cloud-control
+cloud_git_branch_main: main
+
+cloud_tzdata: Europe/Berlin
+
+cloud_apps: /opt
+cloud_storage: /srv
+cloud_python_envs: "{{ cloud_apps }}/pyenv"
+
+shared_group: "{{ cloud_name }}"
+
+users:
+  - name: username
+    displayname: User Name
+    shell: /bin/bash
+    groups:
+      - sudo
+      - username
+    state: present
+    ssh_key: "ssh-rsa ABCDEF"
+
+default_groups:
+  - "ssh"
+  - "users"
+  - "cdrom"
+  - "{{ cloud_shared_group }}"
+
+ssh_port: 22
+
+ssh_configs:
+  - Protocol 2
+  - "Port {{ cloud_ssh_port }}"
+  - PermitRootLogin no
+  - PubkeyAuthentication yes
+  - PasswordAuthentication no
+  - PermitEmptyPasswords no
+
+fail2ban_bantime: 1h
+fail2ban_maxretry: 3
+fail2ban_nginx_selfmade_filter:
+  - nginx-noscript
+  - nginx-nohome
+  - nginx-noproxy
+fail2ban_nginx_default_filter:
+  - nginx-limit-req
+  - nginx-botsearch
+fail2ban_activate_modules:
+  - sshd
+  - nginx
+
+basis_apps:
+  - passwd
+  - vim
+  - unzip
+
+#mount_points:
+#  - path: /some/path
+#    dev: /dev/sdb
+#    fstype: ext4
+#    opts: noatime
+#    state: mounted
+mount_points: []
+
+swap_on: true
+swap_file: /swapfile
+#block size * block count = swap size (Bytes)
+swap_block_size: 1024
+swap_block_count: 1048576

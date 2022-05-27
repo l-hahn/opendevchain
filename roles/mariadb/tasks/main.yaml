@@ -1,0 +1,81 @@
+---
+- name: install requirements for mariadb
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - apt-transport-https
+      - software-properties-common
+      - gpg
+      - gpg-agent
+
+- name: install mariadb repository key
+  apt_key: 
+    url: https://mariadb.org/mariadb_release_signing_key.asc
+    state: present
+
+- name: install mariadb repository
+  apt_repository:
+    repo: "deb [arch={{ ansible_kernel.split('-')[-1] }}] https://archive.mariadb.org/mariadb-{{ mariadb_version }}/repo/debian/ {{ ansible_distribution_release }} main"
+    state: present
+
+- name: install mariadb
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - mariadb-server
+      - python3-pymysql
+  register: mdb_install
+
+- name: setup mariadb service
+  service:
+    name: mariadb
+    enabled: true
+    state: started
+
+# This should only run when initially installed
+- name: initial setup mariadb root user
+  mysql_user:
+    check_implicit_admin: yes
+    name: "{{ mariadb_root_user }}"
+    password: "{{ mariadb_root_pass }}"
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: "{{ mariadb_local_sock }}"
+  when: mdb_install.changed
+
+- name: setup sql secrets file for root
+  template:
+    mode: 0600
+    src: root/.my.cnf.j2
+    dest: /root/.my.cnf
+
+- name: setup initial cleanup script
+  template:
+    mode: 0600
+    src: root/secure_install.sql.j2
+    dest: /root/secure_install.sql
+
+- name: run initial cleanup
+  shell: |
+    mysql 
+    --defaults-extra-file /root/mdb_local.cnf
+    --no-auto-rehash
+    < /root/secure_install.sql
+  when: mdb_install.changed
+
+- name: remove all anonymous user accounts
+  mysql_user:
+    name: ""
+    host_all: yes
+    state: absent
+    login_unix_socket: "{{ mariadb_local_sock }}"
+
+- name: Setup databases based on mariadb conf
+  include_tasks: setup-db.yaml
+  loop: "{{ db_configs | json_query('[?type==`mariadb`]') }}"
+  loop_control:
+    loop_var: db
+    label: "{% if 'dbname' in db %}{{ db.dbname }}{% elif 'dbuser' in db %}{{ db.dbuser }}{% else %}::pass_redacted::{% endif %}"

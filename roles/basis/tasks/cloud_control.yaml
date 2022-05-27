@@ -1,0 +1,8 @@
+---
+- name: setup Cloud Control script
+  template:
+    src: "templates{{ cloud_control_path }}/cloud-control.j2"
+    dest: "{{ cloud_control_path }}/{{ cloud_control_name }}"
+    owner: root
+    group: root
+    mode: 0754

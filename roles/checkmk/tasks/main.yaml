@@ -1,0 +1,29 @@
+---
+- name: install checkmk server
+  include_tasks: server.yaml
+  when: checkmk_is_server | bool
+
+- name: install requirements for checkmk agents
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - xinetd
+
+- name: install agent from monitoring server
+  apt:
+    deb: "{{ checkmk_agent_source }}"
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+  ignore_errors: yes
+  # if the monitoring server is not fast enough online...
+
+- name: restrict metrics access via xinetd only for montoring server
+  lineinfile:
+    path: "/etc/xinetd.d/check_mk"
+    regexp: '^\s*#?only_from\s*='
+    line: "\tonly_from = {{ checkmk_server_ip }}"
+  ignore_errors: yes # if the monitoring server is not fast enough online...
+  notify: restart xinetd
+  

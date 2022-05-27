@@ -1,0 +1,44 @@
+---
+wp_default_locations:
+  - location: "/favicon.ico"
+    options: |
+      log_not_found off;
+      access_log off;
+  - location: "/robots.txt"
+    options: |
+      allow all;
+      log_not_found off;
+      access_log off;         
+  - location: '~ \.php$'
+    options: |
+      include fastcgi.conf;
+      fastcgi_intercept_errors on;
+      fastcgi_pass php;
+      fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+  - location: '~* \.(js|css|png|jpg|jpeg|gif|ico)$'
+    options: |
+      expires max;
+      log_not_found off;
+  - location: "/"
+    options: |
+      try_files $uri $uri/ /index.php?$args;
+
+wp_web_sites:
+  - domain: "{{ domain_external }}"
+    state: present
+    owner: admin
+    root: "{{ cloud_apps }}/wordpress/{{ domain_external }}"
+    root_setup: false
+    wordpress: true
+    index:
+      - index.php
+    db:
+      type: mariadb
+      name: wordpress
+      user: wordpressuser
+      pass: FancyGiteaDbPasswordVeryLong
+    letsencrypt: true
+    locations: "{{ wp_default_locations }}"
+    options:
+      access_log: "/var/log/nginx/{{ domain_external }}-access.log"
+      error_log: "/var/log/nginx/{{ domain_external }}-error.log"

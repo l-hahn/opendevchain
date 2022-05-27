@@ -1,0 +1,22 @@
+openproject/edition default
+
+postgres/autoinstall reuse
+postgres/db_host {{ openproject_db.host | default('localhost') }}
+postgres/db_port {{ openproject_db.port | default('5432') }}
+postgres/db_username {{ openproject_db.user }}
+postgres/db_password {{ openproject_db.pass }}
+postgres/db_name {{ openproject_db.name }}
+server/autoinstall skip
+smtp/autoinstall smtp
+smtp/authentication login
+
+smtp/host {{ openproject_mail_smtp_host }}
+smtp/port {{ openproject_mail_smtp_port }}
+smtp/username {{ openproject_mail_smtp_user }}
+smtp/password {{ openproject_mail_smtp_pass }}
+smtp/domain {{ openproject_mail_smtp_domain }}
+smtp/admin_email {{ openproject_mail_admin }}
+memcached/autoinstall install
+
+server/hostname {{ openproject_domain }}
+server/ssl no

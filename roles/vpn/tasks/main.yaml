@@ -1,0 +1,32 @@
+---
+- name: install openvpn and recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "openvpn"
+
+- name: setup sysctl config for openvpn
+  lineinfile:
+    path: "{{ sysctl_conf }}"
+    regexp: '^#?{{ configline.split("=")[0] }}='
+    line: "{{ configline }}"
+    backrefs: yes
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ sysctl_configs }}"
+  loop_control:
+    loop_var: configline
+    label: "{{ configline }}"
+  notify: restart sysctl
+
+# run in a block only when for every vpn_client user there is a certificate
+# otherwise ignore ...
+# It is better to have a matching config (dependency currently only to vpn)
+# then to catch spectacular cases.
+- block:
+  - include_tasks: server.yaml
+  - include_tasks: clients.yaml
+  when: vpn_clients | difference(easy_rsa_clients) | length == 0

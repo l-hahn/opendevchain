@@ -1,0 +1,7 @@
+---
+- name: restart authentik
+  docker_compose:
+    project_src: "{{ authentik_link }}"
+    state: present
+    restarted: yes
+    remove_orphans: yes

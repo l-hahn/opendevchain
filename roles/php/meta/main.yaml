@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: php
+  namespace: hahn-cloud
+  author: Lars Hahn
+  company: Data Learning
+  license: MIT
+  description: Role to setup PHP; should be used in combination with an DB-, HTTP-Server.
+  platforms:
+    - name: Debian
+      versions:
+        - 11
+  galaxy_tags:
+    - php
+dependencies: []

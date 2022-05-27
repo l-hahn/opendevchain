@@ -1,0 +1,32 @@
+---
+- name: setup authentik docker dir
+  file:
+    state: directory
+    path: "{{ item }}"
+  loop:
+    - "{{ authentik_dir }}"
+    - "{{ authentik_inst }}"
+
+- name: link installation folder
+  file:
+    state: link
+    src: "{{ authentik_inst }}"
+    dest: "{{ authentik_link }}"
+
+- name: download authentik compose file
+  get_url:
+    url: "{{ authentik_source }}/{{ authentik_version }}/{{ authentik_target }}"
+    dest: "{{ authentik_link }}/{{ authentik_target }}"
+    force: yes
+    owner: root
+    group: root
+  notify: restart authentik
+
+- name: template environment
+  template:
+    src: opt/authentik/.env.j2
+    dest: "{{ authentik_link }}/.env"
+    mode: 0640
+    owner: root
+    group: root
+  notify: restart authentik

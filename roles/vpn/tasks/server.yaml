@@ -1,0 +1,78 @@
+---
+- name: find installed openvpn clients
+  find:
+    paths: "{{ vpn_home }}/client/"
+    patterns: "*.crt"
+  register: easyrsa_key_file
+
+#- name: Setup default OpenVPN configuration
+#  shell: 
+#    cmd: "gunzip -c {{ vpn_doc_examples }}/server.conf.gz > {{ vpn_home }}/server.conf"
+#    creates: "{{ vpn_home }}/server.conf"
+
+- name: Setup default OpenVPN configuration
+  copy: 
+    src: "{{ vpn_doc_examples }}/server.conf"
+    dest: "{{ vpn_home }}/server.conf"
+    owner: root
+    group: root
+    force: no
+
+- name: find server TLS-Auth key
+  find:
+    paths: "{{ vpn_home }}/server/"
+    patterns: "ta.key"
+  register: tlsauth_key_files
+
+- name: generate TLS-Auth key
+  command: "openvpn --genkey --secret {{ vpn_tlsauth_key_file }}"
+  when: tlsauth_key_files.matched == 0
+
+- name: install easy-rsa CA and server certs
+  copy:
+    src: "{{ easy_rsa_home }}/pki/{{ item }}"
+    dest: "{{ vpn_home }}/server/"
+    mode: 0600
+    owner: root
+    group: root
+  loop:
+    - "ca.crt"
+    - "dh.pem"
+    - "private/{{ vpn_server }}.key"
+    - "issued/{{ vpn_server }}.crt"
+
+- name: setup OpenVPN configuration
+  lineinfile:
+    path: "{{ vpn_home }}/server.conf"
+    regexp: '^;?{{ configline.split(" ")[0] }}{% if configline.split(" ") | length > 1 %} {% endif %}'
+    line: "{{ configline }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ vpn_server_conf }}"
+  loop_control:
+    loop_var: configline
+    label: "{{ configline }}"
+  notify: restart openvpn
+
+- name: off-setup OpenVPN configuration
+  lineinfile:
+    path: "{{ vpn_home }}/server.conf"
+    regexp: '^{{ configline.split(" ")[0] }}{% if configline.split(" ") | length > 1 %} {% endif %}'
+    line: ";{{ configline }}"
+    backrefs: yes
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ vpn_server_conf_off }}"
+  loop_control:
+    loop_var: configline
+    label: ";{{ configline }}"
+  notify: restart openvpn
+
+- name: enable openvpn@server systemd unit
+  systemd:
+    name: openvpn@server
+    enabled: yes
+    daemon_reload: yes
+    state: started

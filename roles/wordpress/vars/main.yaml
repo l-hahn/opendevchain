@@ -1,0 +1,2 @@
+---
+wordpress_latest_target: "{{ download_folder }}/wordpress-latest.tar.gz"

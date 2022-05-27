@@ -1,0 +1,20 @@
+---
+cloud_update: false
+
+easy_rsa_ca: "{{ ansible_hostname }}"
+easy_rsa_servers:
+  - name: some_server
+    state: present
+easy_rsa_clients:
+  - name: username
+    state: present
+  - name: username.app
+    state: absent
+easy_rsa_vars_conf:
+  country: "COUNTRY"
+  province: "PROVINCE"
+  city: "CITY"
+  company: "YOUR COMPANY"
+  mail: "admin@your-company.com"
+
+

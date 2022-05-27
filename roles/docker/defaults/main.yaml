@@ -1,0 +1,4 @@
+---
+cloud_update: false
+
+docker_compose_version: 1.29.2

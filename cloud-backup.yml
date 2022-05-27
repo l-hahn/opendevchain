@@ -1,0 +1,27 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+
+    mount_points:
+      - path: /backup
+        dev: /dev/sdb
+
+
+    # backup
+    backup_client: false
+    backup_hosts:
+      - name: cloud-example-server
+        domain: "example-server.{{ domain_external }}"
+
+  vars_files:
+    - "group_vars/environment.yaml"

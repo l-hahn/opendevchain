@@ -1,0 +1,34 @@
+[DEFAULT]
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_bantime }}
+maxretry = {{ fail2ban_maxretry }}
+
+[sshd]
+enabled  = true
+port     = 22,{{ ssh_port }},ssh
+
+[nginx-http-auth]
+enabled  = {{ 'nginx' in fail2ban_activate_modules }}
+port     = http,https
+filter   = nginx-noscript
+logpath  = %(nginx_error_log)s
+maxretry = 6
+
+{% for filter in fail2ban_nginx_default_filter %}
+[{{ filter }}]
+enabled  = {{ 'nginx' in fail2ban_activate_modules }}
+port     = http,https
+filter   = {{ filter }}
+logpath  = %(nginx_access_log)s
+maxretry = 2
+
+{% endfor %}
+{% for filter in fail2ban_nginx_selfmade_filter %}
+[{{ filter }}]
+enabled  = {{ 'nginx' in fail2ban_activate_modules }}
+port     = http,https
+filter   = {{ filter }}
+logpath  = %(nginx_access_log)s
+maxretry = 2
+
+{% endfor %}

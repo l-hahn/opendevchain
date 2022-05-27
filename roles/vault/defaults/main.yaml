@@ -1,0 +1,48 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+
+vault_source: https://releases.hashicorp.com/vault
+vault_version: 1.9.3
+vault_arch: linux_amd64
+
+vault_pid: "{{ cloud_apps }}/vault/vault.pid"
+
+vault_ui: "true"
+vault_no_mlock: "false"
+
+vault_port: 8200
+vault_listener: 127.0.0.1
+vault_api_addr: "http://{{ vault_listener }}:{{ vault_port }}"
+vault_cluster_addr: ""
+vault_cluster_name: "vault"
+
+
+vault_storage:
+  storage: "storage"
+  type: "file"
+  conf: |
+    path = "{{ vault_home }}/data"
+
+vault_listener_tcp:
+  address: "{{ vault_listener }}:{{ vault_port }}"
+  tls_disable: "true"
+  proxy_protocol_behavior: "{{ vault_proxy_behaviour }}"
+
+
+vault_config_options:
+  max_lease_ttl: "10h"
+  default_lease_ttl: "10h"
+
+vault_config_blocks:
+  - conf: telemetry
+    type:
+    options: |
+      prometheus_retention_time = "30s"
+      disable_hostname = true
+
+
+# required only, when vault_proxy_behaviour is e.g. set to allow_authorized
+# see https://www.vaultproject.io/docs/configuration/listener/tcp#proxy_protocol_authorized_addrs
+vault_proxy_authorised_addr: []
+vault_proxy_behaviour: use_always

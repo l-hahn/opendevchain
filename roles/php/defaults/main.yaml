@@ -1,0 +1,40 @@
+---
+php_version: 8.0
+
+php_modules: []
+
+php_memory_limit: 128M
+php_upload_max_filesize: 2M
+php_post_max_size: 8M
+
+php_opcache_interned_strings_buffer: 8
+php_opcache_save_comments: 1
+php_opcache_revalidate_freq: 2
+php_opcache_validate_timestamps: 1
+
+# see: https://spot13.com/pmcalculator/
+php_pm_max_children: 102
+php_pm_start_servers: 25
+php_pm_min_spare_servers: 25
+php_pm_max_spare_servers: 76
+
+
+php_fpm_config: []
+# - key: upload_max_filesize
+#   value: 2M
+
+php_fpm_poolconf: []
+# - key: pm.max_children
+#   value: 102
+
+php_fpm_poolconf_env:
+  - key: HOSTNAME
+    value: $HOSTNAME
+  - key: PATH
+    value: /usr/local/bin:/usr/bin:/bin
+  - key: TMP
+    value: /tmp
+  - key: TMPDIR
+    value: /tmp
+  - key: TEMP
+    value: /tmp

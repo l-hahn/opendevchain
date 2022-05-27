@@ -1,0 +1,35 @@
+---
+- name: generate file for swapping
+  command:
+    cmd: "dd if=/dev/zero of={{ swap_file }} bs={{ swap_block_size }} count={{ swap_block_count }}"
+    chdir: "/"
+    creates: "{{ swap_file }}"
+  register: swapfile_setup
+
+- name: prepare swap file
+  command:
+    cmd: "mkswap {{ swap_file }}"
+    chdir: "/"
+  when: swapfile_setup.changed
+  register: swapfile_creation
+
+- name: set swap permission
+  file:
+    path: "{{ swap_file }}"
+    mode: 0600
+
+- name: activate swap
+  command:
+    cmd: "swapon {{ swap_file }}"
+    chdir: "/"
+  when: swapfile_creation.changed
+
+- name: mount swap on boot
+  mount:
+    path: none
+    src: "{{ swap_file }}"
+    fstype: swap
+    opts: sw
+    passno: 0
+    dump: 0
+    state: present

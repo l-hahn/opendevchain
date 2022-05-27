@@ -1,0 +1,36 @@
+disable_mlock      = {{ vault_no_mlock }}
+ui                 = {{ vault_ui }}
+
+
+api_addr           = "{{ vault_api_addr }}"
+{% if vault_cluster_addr != '' %}
+cluster_addr       = "{{ vault_cluster_addr }}"
+cluster_name       = "{{ vault_cluster_name }}"
+disable_clustering = false
+{% else %}
+disable_clustering = true
+{% endif %}
+
+pid_file           = "{{ vault_pid }}"
+
+{{vault_storage.storage }} "{{ vault_storage.type }}" {
+  {{ vault_storage.conf }}
+}
+
+listener "tcp" {
+{% for key, value in vault_listener_tcp.items() %}
+  {{ key }} = "{{ value }}"
+{% endfor %}
+}
+
+{% for key, value in vault_config_options.items() %}
+{{ key }} = "{{ value }}"
+{% endfor %}
+
+{% for block in vault_config_blocks %}
+{{ block.conf }}{% if block.type is defined and block.type is not none and block.type != '' %} "{{ block.type }}"{% endif %} {
+{% filter indent(width=2) %}
+  {{ block.options }}
+{% endfilter %}
+}
+{% endfor %}

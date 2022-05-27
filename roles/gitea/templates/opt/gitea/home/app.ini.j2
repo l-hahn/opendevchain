@@ -1,0 +1,80 @@
+APP_NAME = gitea@{{ gitea_ssh_domain }}
+RUN_USER = {{ gitea_usr }}
+RUN_MODE = {{ cloud_stage }}
+
+[database]
+DB_TYPE  = postgres
+HOST     = {{ gitea_db.host | default('localhost') }}:{{ gitea_db.port | default(5432) }}
+NAME     = {{ gitea_db.name }}
+USER     = {{ gitea_db.user }}
+PASSWD   = `{{ gitea_db.pass }}`
+SCHEMA   = 
+SSL_MODE = disable
+CHARSET  = utf8
+PATH     = {{ gitea_data_location }}/data/gitea.db
+LOG_SQL  = false
+
+[repository]
+ROOT = {{ gitea_data_location }}/data/gitea-repositories
+
+[server]
+SSH_DOMAIN       = {{ gitea_ssh_domain }}
+DOMAIN           = {{ gitea_domain }}
+HTTP_PORT        = {{ gitea_port | default(3000) }}
+ROOT_URL         = {{ gitea_domain_protocol }}://{{ gitea_ssh_domain }}/
+DISABLE_SSH      = {{ gitea_ssh | default('false') }}
+SSH_PORT         = {{ ssh_port | default(22) }}
+LFS_START_SERVER = {{ gitea_lfs | default('true') }}
+LFS_CONTENT_PATH = {{ gitea_data_location }}/data/lfs
+LFS_JWT_SECRET   = `{{ gitea_jwt_secret }}`
+OFFLINE_MODE     = {{ gitea_is_offline | default('false') }}
+LANDING_PAGE     = {{ gitea_landing_page | default('explore') }}
+
+[mailer]
+ENABLED        = {{ gitea_mail }}
+FROM           = {{ gitea_mail_from }}
+MAILER_TYPE    = {{ gitea_mail_type }}
+HOST           = {{ gitea_mail_domain }}:{{ gitea_mail_port }}
+IS_TLS_ENABLED = {% if gitea_mail_tls is defined and  gitea_mail_tls%}true{% else %}false{% endif %} 
+USER           = {{ gitea_mail_user }}
+PASSWD         = `{{ gitea_mail_pass }}`
+
+[service]
+REGISTER_EMAIL_CONFIRM            = true
+ENABLE_NOTIFY_MAIL                = true
+DISABLE_REGISTRATION              = true
+ALLOW_ONLY_EXTERNAL_REGISTRATION  = false
+ENABLE_CAPTCHA                    = false
+REQUIRE_SIGNIN_VIEW               = false
+DEFAULT_KEEP_EMAIL_PRIVATE        = true
+DEFAULT_ALLOW_CREATE_ORGANIZATION = true
+DEFAULT_ENABLE_TIMETRACKING       = true
+NO_REPLY_ADDRESS                  = noreply.{{ gitea_ssh_domain }}
+
+[picture]
+DISABLE_GRAVATAR        = false
+ENABLE_FEDERATED_AVATAR = true
+
+[openid]
+ENABLE_OPENID_SIGNIN = false
+ENABLE_OPENID_SIGNUP = false
+
+[oauth2_client]
+ENABLE_AUTO_REGISTRATION = true
+UPDATE_AVATAR            = true
+ACCOUNT_LINKING          = auto
+
+[session]
+PROVIDER = file
+
+[log]
+MODE      = file
+LEVEL     = info
+ROOT_PATH = {{ gitea_data_location }}/log
+ROUTER    = file
+
+[security]
+INSTALL_LOCK       = true
+INTERNAL_TOKEN     = `{{ gitea_internal_token }}`
+SECRET_KEY         = `{{ gitea_secret_key }}`
+PASSWORD_HASH_ALGO = pbkdf2

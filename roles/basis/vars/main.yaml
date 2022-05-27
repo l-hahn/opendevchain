@@ -1,0 +1,7 @@
+---
+sshd_path: "/etc/ssh"
+sshd_conf: "{{ sshd_path }}/sshd_config"
+fail2ban_path: "/etc/fail2ban"
+fail2ban_jail_conf: "{{ fail2ban_path }}/jail.local"
+
+cloud_control_path: "/usr/local/bin"

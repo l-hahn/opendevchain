@@ -1,0 +1,107 @@
+---
+- name: install openvpn, easy-rsa and recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "easy-rsa"
+
+- name: Setup easy-rsa variables
+  template:
+    src: "templates{{ easy_rsa_home }}/vars.j2"
+    dest: "{{ easy_rsa_home }}/vars"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: initialise PKI
+  shell:
+    creates: "{{ easy_rsa_home }}/pki"
+    chdir: "{{ easy_rsa_home }}"
+    cmd: ./easyrsa init-pki
+
+- name: setup certificate authority
+  shell:
+    creates: "{{ easy_rsa_home }}/pki/ca.crt"
+    chdir: "{{ easy_rsa_home }}"
+    cmd: "echo '{{ easy_rsa_ca }}' | ./easyrsa build-ca nopass"
+
+- name: setup diffie-hellman key-pair for key exchange
+  shell:
+    creates: "{{ easy_rsa_home }}/pki/dh.pem"
+    chdir: "{{ easy_rsa_home }}"
+    cmd: ./easyrsa gen-dh
+
+- name: setup server certificates
+  shell:
+    cmd: |
+      echo '{{ srvr }}' | ./easyrsa gen-req {{ srvr }} nopass
+      echo 'yes' | ./easyrsa sign-req  server {{ srvr }}
+    chdir: "{{ easy_rsa_home }}"
+    creates: "{{ easy_rsa_home }}/pki/issued/{{ srvr }}.crt"
+  loop: "{{ easy_rsa_servers_active }}"
+  loop_control:
+    loop_var: srvr
+    label: "{{ srvr }}"
+
+- name: setup client certificates
+  shell: 
+    cmd: |
+      echo '{{ client }}' | ./easyrsa gen-req {{ client }} nopass
+      echo 'yes' | ./easyrsa sign-req  client {{ client }}
+    chdir: "{{ easy_rsa_home }}"
+    creates: "{{ easy_rsa_home }}/pki/issued/{{ client }}.crt"
+  loop: "{{ easy_rsa_clients_active }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client }}"
+
+- name: verify certificate integrety
+  command: "openssl verify -CAfile {{ easy_rsa_home }}/pki/ca.crt {{ easy_rsa_home }}/pki/issued/{{ cert }}.crt"
+  register: easy_rsa_cert_check
+  changed_when: ((easy_rsa_cert_check.stdout.split(' ') | length) > 1) and (easy_rsa_cert_check.stdout.split(' ')[1] != "OK")
+  loop: "{{ easy_rsa_entities_active }}"
+  loop_control:
+    loop_var: cert
+    label: "{{ cert }}"
+
+- name: find abstent easy-rsa certifcates
+  find:
+    paths: "{{ easy_rsa_home }}/pki/issued/"
+    pattern: "{{ cert }}.crt"
+  loop: "{{ easy_rsa_entities_passive }}"
+  loop_control:
+    loop_var: cert
+    label: "{{ cert }}"
+  register: easy_rsa_absent_certs
+
+- name: remove absent easy-rsa clients certs
+  file:
+    state: absent
+    path: "{{ client }}"
+  loop: "{{ easy_rsa_absent_certs.results | json_query('[*].files[*].path') | flatten }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client | basename }}"
+  when: easy_rsa_absent_certs.results | length > 0
+
+- name: find abstent easy-rsa keys
+  find:
+    paths: "{{ easy_rsa_home }}/pki/private/"
+    pattern: "{{ cert }}.key"
+  loop: "{{ easy_rsa_entities_passive }}"
+  loop_control:
+    loop_var: cert
+    label: "{{ cert }}"
+  register: easy_rsa_absent_keys
+
+- name: remove absent easy-rsa clients keys
+  file:
+    state: absent
+    path: "{{ client }}"
+  loop: "{{ easy_rsa_absent_keys.results | json_query('[*].files[*].path') | flatten }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client | basename }}"
+  when: easy_rsa_absent_keys.results | length > 0

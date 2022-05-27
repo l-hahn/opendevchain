@@ -1,0 +1,9 @@
+---
+- name: restart mailcow docker containers
+  command:
+    cmd: "{{ item }}"
+    chdir: "{{ mailcow_folder }}/"
+  loop:
+    - docker-compose down
+    - docker-compose up -d
+  when: not mailcow_start.changed

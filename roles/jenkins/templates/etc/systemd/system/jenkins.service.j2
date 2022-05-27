@@ -1,0 +1,16 @@
+[Unit]
+Description=Jenkins
+After=network.target
+
+[Service]
+Type=simple
+User={{ jenkins_usr }}
+Group={{ jenkins_grp }}
+EnvironmentFile={{ jenkins_link }}/jenkins.conf
+ExecStart={{ jenkins_java_home }}/bin/java ${JAVA_ARGS} -jar ${JENKINS_WAR} ${JENKINS_ARGS}
+WorkingDirectory={{ jenkins_home }}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

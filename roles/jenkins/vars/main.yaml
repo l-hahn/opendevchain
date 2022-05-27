@@ -1,0 +1,8 @@
+---
+jenkins_inst: "{{ cloud_apps }}/jenkins/jenkins_{{ jenkins_version }}"
+jenkins_link: "{{ cloud_apps }}/jenkins/inst"
+jenkins_home: "{{ jenkins_data_location }}"
+jenkins_web: "{{ cloud_apps }}/jenkins/web"
+
+jenkins_usr: jenkins
+jenkins_grp: "{{ jenkins_usr }}"

@@ -1,0 +1,112 @@
+---
+# Basic
+- name: install requirements for mailcow
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - python3-openssl
+
+# Mailcow Setup
+- name: clone mailcow repository
+  git:
+    repo: https://github.com/mailcow/mailcow-dockerized
+    dest: "{{ mailcow_folder }}"
+    update: no
+
+# Mailcow Config
+- name: setup mailcow config
+  template:
+    src: opt/mailcow/mailcow.conf.j2
+    dest: "{{ mailcow_folder }}/mailcow.conf"
+    mode: 0600
+  notify: restart mailcow docker containers
+
+- name: setup env link to mailcow conf
+  file:
+    src: "{{ mailcow_folder }}/mailcow.conf"
+    dest: "{{ mailcow_folder }}/.env"
+    state: link
+
+- name: setup ssl folder
+  file:
+    path: "{{ mailcow_ssl_path }}"
+    state: directory
+
+- name: generate dh params
+  openssl_dhparam:
+    path: "{{ mailcow_ssl_path }}/dhparams.pem"
+    size: 2048
+  notify: restart mailcow docker containers
+  when: not (mailcow_use_letsencrypt | default('false'))
+
+- name: use predefined dh params
+  copy:
+    remote_src: yes
+    src: "{{ mailcow_folder }}/data/assets/ssl-example/dhparams.pem"
+    dest: "{{ mailcow_ssl_path }}/dhparams.pem"
+  notify: restart mailcow docker containers
+  when: (mailcow_use_letsencrypt | default('false'))
+
+- name: generate ssl private key
+  openssl_privatekey:
+    path: "{{ mailcow_ssl_path }}/key.pem"
+    size: 4096
+  register: key_generation
+  notify: restart mailcow docker containers
+
+- name: generate ssl cert request 
+  openssl_csr:
+    path: "{{ mailcow_ssl_path }}/csr.pem"
+    privatekey_path: "{{ mailcow_ssl_path }}/key.pem"
+    common_name: "{{ mailcow_cert_subjects.CN }}"
+    country_name: "{{ mailcow_cert_subjects.C }}"
+    locality_name: "{{ mailcow_cert_subjects.L }}"
+    organization_name: "{{ mailcow_cert_subjects.O }}"
+    organizational_unit_name: "{{ mailcow_cert_subjects.OU }}"
+    state_or_province_name: "{{ mailcow_cert_subjects.ST }}"
+  when: key_generation.changed
+  register: cert_request
+
+- name: generate selfsigned certificate
+  openssl_certificate:
+    provider: selfsigned
+    path: "{{ mailcow_ssl_path }}/cert.pem"
+    privatekey_path: "{{ mailcow_ssl_path }}/key.pem"
+    csr_path: "{{ mailcow_ssl_path }}/csr.pem"
+  when: cert_request.changed
+  notify: restart mailcow docker containers
+
+- name: set http redirect to https
+  template:
+    src: opt/mailcow/data/conf/nginx/redirect.conf.j2
+    dest: "{{ mailcow_folder }}/data/conf/nginx/redirect.conf"
+  notify: restart mailcow docker containers
+  when: mailcow_no_http
+
+# Mailcow build
+- name: check mailcow image availability
+  command: docker image list
+  changed_when: false
+  register: docker_image_list
+
+- name: pull images for mailcow containers
+  command: 
+    cmd: docker-compose pull
+    chdir: "{{ mailcow_folder }}/"
+  when: "'mailcow' not in docker_image_list.stdout"
+
+- name: find running mailcow containers
+  command:
+    cmd: "{% raw %}docker ps --format '{{.Image}}'{% endraw %}"
+    chdir: "{{ mailcow_folder }}/"
+  changed_when: false
+  register: docker_running_list
+
+- name: start mailcow containers if not running
+  command:
+    cmd: docker-compose up -d
+    chdir: "{{ mailcow_folder }}/"
+  when: "'mailcow' not in docker_running_list.stdout"
+  register: mailcow_start

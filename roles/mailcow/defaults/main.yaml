@@ -1,0 +1,48 @@
+---
+cloud_update: false
+cloud_apps: /opt
+domain_external: "my-domain.tld"
+
+
+mailcow_instance: "{{ domain_external.split('.')[:-1] | join('') | regex_replace('[^a-zA-Z0-9]+','') }}"
+
+mailcow_db_name: mailcow
+mailcow_db_root_pass: rootpass
+mailcow_db_user: mailcow
+mailcow_db_pass: userpass
+
+mailcow_cert_subjects:
+  CN: "mail.{{ domain_external }}"
+  C: "DE"
+  L: "Willich"
+  O: "mailcow"
+  OU: "mailcow"
+  ST: "NRW"
+mailcow_http: 80
+mailcow_https: 443
+
+mailcow_docker_ipv4_cidr: 172.22.1
+mailcow_docker_ipv6_cidr: fd4d:6169:6c63:6f77::/64
+
+mailcow_dovecot_target: 127.0.0.1:19991
+mailcow_sql_target: 127.0.0.1:13306
+mailcow_solr_target: 127.0.0.1:18983
+mailcow_redis_target: 127.0.0.1:7654
+mailcow_sieve_port: 4190
+
+mailcow_other_configs: []
+
+mailcow_timezone: Europe/Berlin
+
+mailcow_gc_time: 7200
+mailcow_solr_heap_mb: 1024
+mailcow_redis_log_count: 9999
+mailcow_sogo_timeout_m: 480
+
+mailcow_use_letsencrypt: true
+mailcow_use_clamav: true
+mailcow_use_sogo: true
+mailcow_use_solr: true
+mailcow_ip_check: true
+mailcow_http_check: true
+mailcow_no_http: true

@@ -1,0 +1,5 @@
+{% if 'mail' in backup_targets %}
+{% for mail in backup_targets.mail %}
+{{ mail }}
+{% endfor %}
+{% endif %}

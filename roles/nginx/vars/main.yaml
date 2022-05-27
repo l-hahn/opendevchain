@@ -1,0 +1,7 @@
+---
+nginx_root_dir: /etc/nginx
+default_docroot: /var/www
+
+default_locations:
+  - location: "/"
+    options: "try_files $uri $uri/ =404;"

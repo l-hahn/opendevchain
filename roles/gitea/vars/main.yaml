@@ -1,0 +1,7 @@
+---
+gitea_usr: gitea
+gitea_grp: "{{ gitea_usr }}"
+
+gitea_link: "{{ cloud_apps }}/gitea/inst"
+gitea_inst: "{{ cloud_apps }}/gitea/gitea-{{ gitea_version }}"
+gitea_home: "{{ cloud_apps }}/gitea/home"

@@ -1,0 +1,90 @@
+---
+- name: install Gitea recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "git"
+
+- name: setup gitea group
+  group:
+    name: "{{ gitea_usr }}"
+    state: "present"
+
+- name: setup gitea user
+  user:
+    name: "{{ gitea_usr }}"
+    home: "{{ gitea_home }}"
+    group: "{{ gitea_grp }}"
+    groups:
+      - "{{ gitea_grp }}"
+    comment: Virtual Gitea User
+    shell: /bin/bash
+    state: present
+    system: yes
+
+- name: setup gitea directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ gitea_usr }}"
+    group: "{{ gitea_grp }}"
+    mode: 0750
+  loop:
+    - "{{ gitea_inst }}"
+    - "{{ gitea_home }}"
+    - "{{ gitea_data_location }}"
+    - "{{ gitea_data_location }}/custom"
+    - "{{ gitea_data_location }}/data"
+    - "{{ gitea_data_location }}/log"
+
+- name: setup gitea config directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "root"
+    group: "{{ gitea_grp }}"
+    mode: 0770
+  loop:
+    - "/etc/gitea"
+
+- name: setup gitea installation link
+  file:
+    state: link
+    src: "{{ gitea_inst }}"
+    dest: "{{ gitea_link }}"
+    owner: "{{ gitea_usr }}"
+    group: "{{ gitea_grp }}"
+    mode: 0750
+
+- name: download gitea
+  get_url:
+    url: "{{ gitea_source }}/{{ gitea_version }}/gitea-{{ gitea_version }}-{{ gitea_arch }}"
+    dest: "{{ gitea_link }}/gitea"
+    owner: "{{ gitea_usr }}"
+    group: "{{ gitea_grp }}"
+    mode: 0775
+  notify: generate admin user
+
+- name: setup gitea application ini
+  template:
+    src: opt/gitea/home/app.ini.j2
+    dest: "{{ gitea_home }}/app.ini"
+    owner: root
+    group: "{{ gitea_grp }}"
+    mode: 0640
+  notify: restart gitea
+
+- name: setup gitea systemd unit
+  template:
+    src: etc/systemd/system/gitea.service.j2
+    dest: /etc/systemd/system/gitea.service
+  notify: restart gitea
+
+- name: enable gitea systemd unit
+  systemd:
+    name: gitea
+    enabled: yes
+    daemon_reload: yes
+    state: started

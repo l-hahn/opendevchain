@@ -1,0 +1,47 @@
+---
+- name: list active users
+  shell: cat /etc/passwd | grep -v "nologin" | cut -f 1 -d ":"
+  changed_when: false
+  register: active_users
+
+- name: Setup required groups of users
+  group:
+    name: "{{ group }}"
+    state: present
+  loop: "{{ ((users | json_query('[*].groups') | flatten)  + default_groups) | unique }}"
+  loop_control:
+    loop_var: group
+    label: "{{ group }}"
+
+- name: Setup users
+  user:
+    name: "{{ user.name }}"
+    state: "{{ user.state }}"
+    comment: "{{ user.displayname }}"
+    group: "{{ user.name }}"
+    groups: "{{ default_groups | default([]) + user.groups }}"
+    append: yes
+    shell: "{{ user.shell }}"
+  loop: "{{ users }}"
+  loop_control:
+    loop_var: user
+    label: "{{ user.name }}"
+  register: new_user_setup
+
+- name: Setup User ssh_key
+  authorized_key: 
+    user: "{{ user.name }}"
+    state: "{{ user.state | default('present') }}"
+    key: "{{ user.ssh_key }}"
+  loop: "{{ users | selectattr('ssh_key', 'defined') | list }}"
+  loop_control:
+    label: "{{ user.name }}"
+    loop_var: user
+
+- name: Activate password setup for newly created users
+  shell: " set -e pipefail; passwd -d {{ user }}; chage -d0 {{ user }}"
+  loop: "{{ new_user_setup | json_query('results[?changed==`true`].name') | difference(active_users.stdout_lines) }}"
+  loop_control:
+    label: "{{ user }}"
+    loop_var: user
+  when: new_user_setup.changed

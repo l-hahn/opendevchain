@@ -1,0 +1,72 @@
+#!/bin/bash
+
+set -e -o pipefail
+
+if [ -f {{ backup_lock }} ]; then
+    echo "Backup lock! Cannot procceed as lock '{{ backup_lock }}' exist."
+    echo "Associated PID is $(cat {{ backup_lock }})"
+    exit 1
+fi
+echo "$$" > {{ backup_lock }}
+
+cd {{ backup_folder }}
+
+# Load script envs
+echo "Load script environment variables"
+{% for scr_env in backup_client_script_envs %}
+{% if 'path' in scr_env %}
+export {{ scr_env.var }}={{ scr_env.path }}:${{ scr_env.var }}
+{% else %}
+export {{ scr_env.var }}={{ scr_env.value }}
+{% endif %}
+{% endfor %}
+
+
+# Perform client pre backup scripts for
+echo "Perform pre-backup scripts"
+{% for cmd in backup_client_scripts %}
+{{ cmd }};
+{% endfor %}
+
+
+# Backup files and directories
+echo "Copy files and directories"
+while read DIRFILE; do
+    echo " - Copy $DIRFILE"
+    BACKUP_SUBDIR=$(dirname $DIRFILE)
+    mkdir -p "{{ backup_storage.file.path }}/$BACKUP_SUBDIR"
+    cp -r -u $DIRFILE "{{ backup_storage.file.path }}/$DIRFILE"
+done < {{ backup_conf }}/filedir.list
+rm -f file.tgz #remove old backup
+tar czfv file.tgz file
+rm -rf file/*
+
+# Backup databases
+echo "Generate DB dumps"
+while read DBS; do
+    DBTYPE=$(echo $DBS | cut -f 1 -d "{{ backup_conf_db_sep }}" );
+    DBNAME=$(echo $DBS | cut -f 2 -d "{{ backup_conf_db_sep }}" );
+    if [ $DBTYPE == "mariadb" ] || [ $DBTYPE == "mysql" ]; then
+        echo "- dump to {{ backup_storage.db.path }}/$DBTYPE/$DBNAME.sql"
+        mkdir -p {{ backup_storage.db.path }}/$DBTYPE;
+        mysqldump $DBNAME | gzip -c > {{ backup_storage.db.path }}/$DBTYPE/$DBNAME.sql.gz;
+    elif [ $DBTYPE == "pgsql" ]; then
+        echo "- dump to {{ backup_storage.db.path }}/$DBTYPE/$DBNAME.sql"
+        mkdir -p {{ backup_storage.db.path }}/$DBTYPE;
+        sudo -u postgres bash -c "pg_dump $DBNAME | gzip -c > /tmp/$DBNAME.sql.gz";
+        mv /tmp/$DBNAME.sql.gz /backup/db/$DBTYPE/$DBNAME.sql.gz;
+    else
+        echo "- ERROR! DB type '$DBTYPE' for '$DBNAME' is unknown to backup."
+    fi
+done < {{ backup_conf }}/db.list
+rm -f db.tgz #remove old backup
+tar czfv db.tgz db
+rm -rf db/*
+
+#Mail
+rm -f mail.tgz #remove old backup
+tar czfv mail.tgz mail
+rm -rf mail/*
+
+rm {{ backup_lock }}
+chown {{ backup_owner }}:{{ backup_group }} {{ backup_folder }}/*.tgz

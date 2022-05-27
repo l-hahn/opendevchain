@@ -1,0 +1,38 @@
+---
+- name: generate backup ssh user
+  user:
+    name: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    comment: Backup user
+    shell: /bin/sh
+
+- name: Setup User ssh_key
+  authorized_key: 
+    user: "{{ backup_owner }}"
+    key: "{{ backup_owner_ssh_key }}"
+
+- name: generate config lists
+  template:
+    src: backup/conf/{{ conf }}.list.j2
+    dest: "{{ backup_conf }}/{{ conf }}.list"
+  loop:
+    - filedir
+    - db
+    - mail
+  loop_control:
+    loop_var: conf
+    label: "{{ conf }}.list"
+
+- name: setup backup script
+  template:
+    src: backup/backup_on_client.sh.j2
+    dest: "{{ backup_folder }}/backup.sh"
+    mode: 0740
+
+- name: setup cronjob for client backup generation
+  cron:
+    name: "backup"
+    weekday: "{{ backup_times_weekday }}"
+    hour: "{{ backup_times_hour | join(',') }}"
+    minute: "{{ backup_times_minute }}"
+    job: "{{ backup_folder }}/backup.sh"

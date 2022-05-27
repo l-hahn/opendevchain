@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -e -o pipefail
+
+cd {{ backup_folder }}
+if [ -f {{ backup_lock }} ]; then
+    echo "Backup lock! Cannot procceed as lock '{{ backup_lock }}' exist."
+    echo "Associated PID is $(cat {{ backup_lock }})"
+    exit 1
+fi
+
+echo "$$" > {{ backup_lock }}
+BKPTIMESTAMP=$(date +"%y-%m-%d.%H")
+BKP=$BKPTIMESTAMP"_backup"
+
+
+# generate rolling folder
+{% for target in backup_targets %}
+{% for host in backup_hosts %}
+{% if 'domain' in host %}
+mkdir -p {{ target }}/{{ host.name + '_' + host.domain }}/$BKP
+{% elif 'ip' in host %}
+mkdir -p {{ target }}/{{ host.name + '_' + host.ip }}/$BKP
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+
+# pull backups
+{% for target in backup_targets %}
+{% for host in backup_hosts %}
+{% if 'domain' in host %}
+rsync --rsh='ssh -p{{ ssh_port }} -i ~{{ backup_owner }}/.ssh/id_rsa'  -chav --stats --ignore-missing-args {{ backup_owner }}@{{ host.domain }}:{{ backup_folder }}/{{ target }}.tgz {{ target }}/{{ host.name + '_' + host.domain }}/$BKP
+{% elif 'ip' in host %}
+rsync --rsh='ssh -p{{ ssh_port }} -i ~{{ backup_owner }}/.ssh/id_rsa' -chav --stats --ignore-missing-args {{ backup_owner }}@{{ host.ip }}:{{ backup_folder }}/{{ target }}.tgz {{ target }}/{{ host.name + '_' + host.ip }}/$BKP
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+
+# link to latest
+{% for target in backup_targets %}
+{% for host in backup_hosts %}
+{% if 'domain' in host %}
+ln -sf {{ backup_folder }}/{{ target }}/{{ host.name + '_' + host.domain }}/$BKP {{ backup_folder }}/{{ target }}/{{ host.name + '_' + host.domain }}/LATEST
+{% elif 'ip' in host %}
+ln -sf {{ backup_folder }}/{{ target }}/{{ host.name + '_' + host.ip }}/$BKP {{ backup_folder }}/{{ target }}/{{ host.name + '_' + host.ip }}/LATEST
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+
+# keep only last {{ backup_keep_days * ( backup_times_hour | length ) }}
+{% for target in backup_targets %}
+{% for host in backup_hosts %}
+{% if 'domain' in host %}
+DELETE_LIST=$(ls -1dtr {{ target }}/{{ host.name + '_' + host.domain }}/* | head -n -{{ backup_keep_days * ( backup_times_hour | length ) }})
+{% elif 'ip' in host %}
+DELETE_LIST=$(ls -1dtr {{ target }}/{{ host.name + '_' + host.ip }}/* | head -n -{{ backup_keep_days * ( backup_times_hour | length ) }})
+{% endif %}
+if (( $( echo $DELETE_LIST | wc -w ) > 0 )); then
+    rm -rf $DELETE_LIST
+fi
+{% endfor %}
+{% endfor %}
+
+
+rm {{ backup_lock }}

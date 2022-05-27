@@ -1,0 +1,99 @@
+---
+- name: setup nexus group
+  group:
+    name: "{{ nexus_usr }}"
+    state: "present"
+
+- name: setup nexus user
+  user:
+    name: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    groups:
+      - "{{ nexus_grp }}"
+    comment: Virtual Sonytype Nesus User
+    shell: /bin/bash
+    state: present
+    system: yes
+
+- name: setup nexus directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    mode: 0750
+  loop:
+    - "{{ nexus_home }}"
+    - "{{ nesux_dir }}"
+
+- name: download nexus
+  unarchive:
+    src: "{{ nexus_source }}/nexus-{{ nexus_version }}-unix.tar.gz"
+    dest: "{{ nesux_dir }}"
+    remote_src: yes
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    mode: 0750
+    creates: "{{ nexus_inst }}"
+  register: nexus_install
+
+- block:
+    - name: move nexus home appropriately
+      copy:
+        src: "{{ nesux_dir }}/sonatype-work/nexus3"
+        dest: "{{ nexus_home }}"
+        owner: "{{ nexus_usr }}"
+        group: "{{ nexus_grp }}"
+        mode: 0750
+    - name: remove old home directory
+      file:
+        path: "{{ nesux_dir }}/sonatype-work"
+        state: absent
+  when: nexus_install.changed
+
+- name: link installed nexus homedir
+  file:
+    state: link
+    src: "{{ nexus_inst }}"
+    dest: "{{ nexus_link }}"
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+
+- name: setup nexus config directory
+  file:
+    state: directory
+    path: "{{ nexus_home }}/nexus3/etc"
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    mode: 0750
+
+- name: setup nexus vmoptions
+  template:
+    src: opt/sonatype-nexus/nexus/bin/nexus.vmoptions.j2
+    dest: "{{nexus_inst }}/bin/nexus.vmoptions"
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    mode: 0750
+  notify: restart nexus
+
+- name: setup nexus properties
+  template:
+    src: opt/sonatype-nexus-data/nexus-config/nexus.properties.j2
+    dest: "{{ nexus_home }}/nexus3/etc/nexus.properties"
+    owner: "{{ nexus_usr }}"
+    group: "{{ nexus_grp }}"
+    mode: 0750
+  notify: restart nexus
+
+- name: setup nexus systemd unit
+  template:
+    src: etc/systemd/system/nexus.service.j2
+    dest: /etc/systemd/system/nexus.service
+  notify: restart nexus
+
+- name: enable nexus systemd unit
+  systemd:
+    name: nexus
+    enabled: yes
+    daemon_reload: yes
+    state: started

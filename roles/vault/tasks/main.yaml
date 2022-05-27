@@ -1,0 +1,67 @@
+---
+- name: setup vault group
+  group:
+    name: "{{ vault_usr }}"
+    state: "present"
+
+- name: setup vault user
+  user:
+    name: "{{ vault_usr }}"
+    group: "{{ vault_grp }}"
+    groups:
+      - "{{ vault_grp }}"
+    comment: Virtual Vault User
+    shell: /sbin/nologin
+    state: present
+
+- name: setup vault directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ vault_usr }}"
+    group: "{{ vault_grp }}"
+    mode: 0750
+  loop:
+    - "{{ vault_inst }}"
+    - "{{ vault_home }}"
+    - "{{ vault_log }}"
+
+- name: setup vault installation link
+  file:
+    state: link
+    src: "{{ vault_inst }}"
+    dest: "{{ vault_link }}"
+    owner: "{{ vault_usr }}"
+    group: "{{ vault_grp }}"
+    mode: 0750
+
+- name: download vault and unarchive
+  unarchive:
+    src: "{{ vault_source }}/{{ vault_version }}/vault_{{ vault_version }}_{{ vault_arch }}.zip"
+    dest: "{{ vault_link }}"
+    remote_src: yes
+    owner: "{{ vault_usr }}"
+    group: "{{ vault_grp }}"
+    mode: "o-rwx"
+    creates: "{{ vault_link }}/vault"
+
+- name: setup vault config
+  template:
+    src: opt/vault/vault.conf.hcl.j2
+    dest: "{{ vault_home }}/vault.conf.hcl"
+    owner: "{{ vault_usr }}"
+    group: "{{ vault_grp }}"
+  notify: restart vault
+
+- name: setup vault systemd unit
+  template:
+    src: etc/systemd/system/vault.service.j2
+    dest: /etc/systemd/system/vault.service
+  notify: restart vault
+
+- name: enable vault systemd unit
+  systemd:
+    name: vault
+    enabled: yes
+    daemon_reload: yes
+    state: started

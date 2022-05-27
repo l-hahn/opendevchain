@@ -1,0 +1,100 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - java
+    - nginx
+    - jenkins
+    - checkmk
+
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+    
+    mount_points:
+      - path: "{{ jenkins_data_location }}"
+        dev: /dev/sdb
+    
+    jenkins_data_location: "{{ cloud_storage }}/jenkins-data"
+    jenkins_website:
+      domain: "build.{{ domain_external }}"
+      letsencrypt: true
+      state: present
+      owner: jenkins
+      port: 80
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        access_log: "/var/log/nginx/build.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/build.{{ domain_external }}-error.log"
+        ignore_invalid_headers: "off"
+      pre_options: |
+        upstream jenkins {
+          keepalive 32; # keepalive connections
+          server 127.0.0.1:8080; # jenkins ip and port
+        }
+        # Required for Jenkins websocket agents
+        map $http_upgrade $connection_upgrade {
+          default upgrade;
+          '' close;
+        }
+      locations:
+        - location: '~ "^/static/[0-9a-fA-F]{8}\/(.*)$"'
+          options: |
+            rewrite "^/static/[0-9a-fA-F]{8}\/(.*)" /$1 last;
+        - location: '/userContent'
+          options: |
+            root {{ cloud_apps }}/jenkins/web;
+            if (!-f $request_filename){
+              # this file does not exist, might be a directory or a /**view** url
+              rewrite (.*) /$1 last;
+              break;
+            }
+            sendfile on;
+        - location: '/'
+          options: |
+            sendfile off;
+            proxy_pass         http://jenkins;
+            proxy_redirect     default;
+            proxy_http_version 1.1;
+
+            # Required for Jenkins websocket agents
+            proxy_set_header   Connection        $connection_upgrade;
+            proxy_set_header   Upgrade           $http_upgrade;
+
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto $scheme;
+            proxy_max_temp_file_size 0;
+
+            #this is the maximum upload size
+            client_max_body_size       10m;
+            client_body_buffer_size    128k;
+
+            proxy_connect_timeout      90;
+            proxy_send_timeout         90;
+            proxy_read_timeout         90;
+            proxy_buffering            off;
+            proxy_request_buffering    off; # Required for HTTP CLI commands
+            proxy_set_header Connection ""; # Clear for keepalive
+
+    # Websites
+    web_sites:
+      - "{{ jenkins_website }}"
+
+    # Backup
+    backup_targets:
+      file:
+        - "{{ jenkins_data_location }}"
+        - "/etc/letsencrypt"
+
+  vars_files:
+    - "group_vars/environment.yaml"

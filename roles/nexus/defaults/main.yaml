@@ -1,0 +1,15 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+
+java_home: "{{ cloud_apps }}/java-jdk/java"
+
+nexus_source: https://download.sonatype.com/nexus/3
+nexus_version: 3.37.3-02
+
+nexus_java_home: "{{ java_home }}"
+
+nexus_data_location: "{{ cloud_storage }}/sonatype-nexus-data"
+nexus_http_port: 8081
+nexus_http_host: 0.0.0.0

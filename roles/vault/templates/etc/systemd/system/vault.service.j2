@@ -1,0 +1,36 @@
+[Unit]
+Description=Vault agent
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User={{ vault_usr }}
+Group={{ vault_grp }}
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+SecureBits=keep-caps
+AmbientCapabilities=CAP_IPC_LOCK
+Capabilities=CAP_IPC_LOCK+ep
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+NoNewPrivileges=yes
+ExecStart={{ vault_link }}/vault server -config {{ vault_home }}/vault.conf.hcl
+ExecReload=/bin/kill --signal HUP $MAINPID
+ExecStop={{ vault_link }}/vault operator step-down
+KillMode=process
+KillSignal=SIGINT
+LimitMEMLOCK=infinity
+LimitNOFILE=65536
+PIDFile={{ vault_pid }}
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=20
+StartLimitBurst=5
+TimeoutStartSec=30
+StandardOutput=append:{{ vault_log }}/vault.log
+StandardError=append:{{ vault_log }}/vault.err
+
+
+[Install]
+WantedBy=multi-user.target

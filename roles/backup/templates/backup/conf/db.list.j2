@@ -1,0 +1,5 @@
+{% if 'db' in backup_targets %}
+{% for db in backup_targets.db %}
+{{ db.type }}{{ backup_conf_db_sep }}{{ db.name }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,44 @@
+---
+- name: install notify_push
+  command:
+    chdir: "{{ ncloud_dir }}"
+    creates: "{{ ncloud_dir }}/apps/notify_push"
+    cmd: php occ app:install notify_push
+  become: yes
+  become_user: "{{ www_group }}"
+  notify: setup notify_push
+  register: notify_push
+
+- name: enable notify_push
+  command:
+    chdir: "{{ ncloud_dir }}"
+    creates: "{{ ncloud_dir }}/apps/notify_push"
+    cmd: php occ app:enable notify_push
+  become: yes
+  become_user: "{{ www_group }}"
+  when: notify_push.changed
+
+- name: configure trusted proxies
+  blockinfile:
+    marker: "// {mark} ANSIBLE MANAGED BLOCK"
+    path: "{{ ncloud_dir }}/config/config.php"
+    block: |
+      'trusted_proxies' => 
+      array (
+        {% for proxy in ncloud_notify_trusted_proxies %}
+        {{ loop.index - 1}} => '{{ proxy }}',
+        {% endfor %}
+      ),
+    insertbefore: "\\);"
+
+- name: setup notify_push systemd unit
+  template:
+    src: etc/systemd/system/notify_push.service.j2
+    dest: /etc/systemd/system/notify_push.service
+
+- name: enable notify_push systemd unit
+  systemd:
+    name: notify_push
+    enabled: yes
+    daemon_reload: yes
+    state: started

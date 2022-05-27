@@ -1,0 +1,28 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
+
+domain_external: my-domain.tld
+
+
+checkmk_edition: free
+checkmk_version: 2.0.0p22
+
+checkmk_server_arch: _0.bullseye_amd64.deb
+checkmk_server_source: "https://download.checkmk.com/checkmk/{{ checkmk_version }}/check-mk-{{ checkmk_edition }}-{{ checkmk_version }}{{ checkmk_server_arch }}"
+checkmk_server_sites:
+  - monitoring
+checkmk_server_host: "{{ domain_external }}"
+checkmk_server_scheme: https
+# allow requests only from that ip (server), otherwise
+# metrics are available from the entire world
+checkmk_server_ip: 12.34.56.78
+
+checkmk_agent_arch: "-1_all.deb"
+checkmk_agent_site: "{{ checkmk_server_sites[0] }}"
+checkmk_agent_source: "{{ checkmk_server_scheme }}://{{ checkmk_server_host }}/{{ checkmk_agent_site }}/check_mk/agents/check-mk-agent_{{ checkmk_version }}{{ checkmk_agent_arch }}"
+
+checkmk_admin_pass: VeryStrongAdminPass
+checkmk_is_server: false

@@ -1,0 +1,77 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - postgres
+    - nginx
+    - openproject
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+
+    openproject_db:
+      type: pgsql
+      name: openproject
+      user: openprojectuser
+      pass: FancyOpenProjectDbPasswordVeryLong
+    openproject_mail_smtp_host: "{{ mail_domain }}"
+    openproject_mail_smtp_port: "{{ mail_port }}"
+    openproject_mail_smtp_user: "{{ development_mail_address }}"
+    openproject_mail_smtp_pass: "{{ development_mail_pass }}"
+    openproject_mail_smtp_domain: "{{ openproject_mail_smtp_host }}"
+    openproject_mail_admin: "{{ noreply_mail_address }}"
+    openproject_domain: "project.{{ domain_external }}"
+
+    openproject_http_port: 6000
+    openproject_webste:
+      domain: "project.{{ domain_external }}"
+      letsencrypt: true
+      state: present
+      owner: openproject
+      port: 80
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        access_log: "/var/log/nginx/project.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/project.{{ domain_external }}-error.log"
+      pre_options: |
+        upstream openproject {
+          server 127.0.0.1:{{ openproject_http_port }};
+        }
+      locations:
+        - location: "/"
+          options: |
+            proxy_pass_header  Server;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Forwarded-Proto https;
+            proxy_redirect     off;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Scheme $scheme;
+            proxy_pass         http://openproject/;
+
+    # Websites
+    web_sites:
+      - "{{ openproject_webste }}"
+
+    # Databases
+    db_configs:
+      - "{{ openproject_db }}"
+
+    # Backup
+    backup_dbs:
+      - "{{ db_configs | json_query('[*].{type: type, name: name}') }}"
+    backup_targets:
+      db: "{{ backup_dbs | flatten }}"
+      file:
+        - "/etc/letsencrypt"
+
+  vars_files:
+    - "group_vars/environment.yaml"

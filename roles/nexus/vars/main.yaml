@@ -1,0 +1,8 @@
+---
+nexus_usr: sonanexus
+nexus_grp: "{{ nexus_usr }}"
+
+nesux_dir: "{{ cloud_apps }}/sonatype-nexus"
+nexus_inst: "{{ nesux_dir }}/nexus-{{ nexus_version }}"
+nexus_home: "{{ nexus_data_location }}"
+nexus_link: "{{ nesux_dir }}/nexus"

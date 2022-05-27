@@ -1,0 +1,11 @@
+[Unit]
+Description=Nextcloud Talk signaling server
+
+[Service]
+ExecStart={{ cloud_apps }}/signaling-server/bin/signaling --config {{ cloud_apps }}/signaling-server/server.conf
+User={{ sgusr }}
+Group={{ sggrp }}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

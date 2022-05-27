@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  role_name: backup
+  namespace: hahn-cloud
+  author: Lars Hahn
+  company: Data Learning
+  license: MIT
+  description: Role to setup a backup system + configuration.
+  min_ansible_version: 2.7
+  platforms:
+    - name: Debian
+      versions:
+        - 10
+  galaxy_tags:
+    - backup
+dependencies: []

@@ -1,0 +1,79 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - postgres
+    - nginx
+    - gitea
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+    
+    mount_points:
+      - path: "{{ gitea_data_location }}"
+        dev: /dev/sdb
+
+    gitea_data_location: "{{ cloud_storage }}/gitea-data"
+    gitea_db:
+      type: pgsql
+      name: gitea
+      user: giteauser
+      pass: FancyGiteaDbPasswordVeryLong
+    gitea_ssh_domain: "git.{{ domain_external }}"
+
+    gitea_internal_token: LookUpDocumentationForSettingUpToken
+    gitea_jwt_secret: LookUpDocumentationForSettingUpSecret
+    gitea_secret_key: LookUpDocumentationForSettingUpKey
+
+    gitea_mail_domain: "{{ mail_domain }}"
+    gitea_mail_from: "{{ noreply_mail_address }}"
+    gitea_mail_user: "{{ development_mail_address }}"
+    gitea_mail_pass: "{{ development_mail_pass }}"
+
+    gitea_admin_user: "admin"
+    gitea_admin_pass: InitialGiteaPasswordPleaseChangeLater
+    gitea_admin_mail: "{{ gitea_mail_from }}"
+
+    gitea_website:
+      domain: "{{ gitea_ssh_domain }}"
+      letsencrypt: true
+      state: present
+      owner: gitea
+      port: 80
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        access_log: "/var/log/nginx/git.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/git.{{ domain_external }}-error.log"
+      locations:
+        - location: '/_/static/assets'
+          options: "alias /path/to/gitea/public;"
+        - location: '/'
+          options: "proxy_pass http://localhost:3000;"
+
+    # Websites
+    web_sites: "{{ gitea_website }}"
+
+    # Databases
+    db_configs:
+      - "{{ gitea_db }}"
+
+    # Backup
+    backup_dbs:
+      - "{{ db_configs | json_query('[*].{type: type, name: name}') }}"
+    backup_targets:
+      db: "{{ backup_dbs | flatten }}"
+      file:
+        - "{{ gitea_data_location }}"
+        - "/etc/letsencrypt"
+
+  vars_files:
+    - "group_vars/environment.yaml"

@@ -1,0 +1,42 @@
+---
+cloud_update: false
+
+www_root: /var/www
+www_group: www-data
+
+web_sites: []
+  # - domain: my-domain.tld
+  #   filetag: file.my-domain.tld
+  #   state: present
+  #   stream: false
+  #   owner: user
+  #   port: 80
+  #   port_option: ""
+  #   root: "{{ www_root }}/my-domain.tld"
+  #   root_setup: True
+  #   index:
+  #     - index.html
+  #     - index.htm
+  #     - index.php
+  #   locations:
+  #     - location: "/"
+  #       options: "try_files $uri $uri/ =404;"
+  #   options:
+  #     access_log: "/var/log/nginx/my-domain-access.log"
+  #     option_key: "option_value"
+  #   add_header:
+  #     - Referrer-Policy                      \"no-referrer\"   always
+  #     - someother header
+  #   pre_options: ""
+  #   post_options: ""
+
+nginx_conf_http: []
+nginx_conf: []
+
+nginx_worker_count: 768
+nginx_pid: /run/nginx.pid
+nginx_log_path: /var/log/nginx
+nginx_gzip: true
+
+letsencrypt_mail_address: admin@my-domain.tld
+

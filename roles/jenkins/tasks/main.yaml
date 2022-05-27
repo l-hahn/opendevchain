@@ -1,0 +1,72 @@
+---
+- name: setup jenkins group
+  group:
+    name: "{{ jenkins_usr }}"
+    state: "present"
+
+- name: setup jenkins user
+  user:
+    name: "{{ jenkins_usr }}"
+    group: "{{ jenkins_grp }}"
+    groups:
+      - "{{ jenkins_grp }}"
+    comment: Virtual Jenkins User
+    shell: /bin/bash
+    state: present
+    system: yes
+
+- name: setup jenkins webroot
+  file:
+    state: directory
+    path: "{{ jenkins_web }}"
+    owner: "{{ www_group }}"
+    group: "{{ jenkins_grp }}"
+    mode: 0770
+
+- name: setup jenkins directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ jenkins_usr }}"
+    group: "{{ jenkins_grp }}"
+    mode: 0750
+  loop:
+    - "{{ jenkins_inst }}"
+    - "{{ jenkins_home }}"
+
+- name: download jenkins war
+  get_url:
+    url: "{{ jenkins_source }}/{{ jenkins_download }}/{{ jenkins_file }}"
+    dest: "{{ jenkins_inst }}/{{ jenkins_file }}"
+    owner: "{{ jenkins_grp }}"
+    group: "{{ jenkins_usr }}"
+
+- name: link installation dir
+  file:
+    state: link
+    src: "{{ jenkins_inst }}"
+    dest: "{{ jenkins_link }}"
+    owner: "{{ jenkins_usr }}"
+    group: "{{ jenkins_grp }}"
+
+- name: template jenkins conf
+  template:
+    src: opt/jenkins/inst/jenkins.conf.j2
+    dest: "{{ jenkins_inst }}/jenkins.conf"
+    owner: "{{ jenkins_usr }}"
+    group: "{{ jenkins_grp }}"
+    mode: 0750
+  notify: restart jenkins
+
+- name: setup jenkins systemd unit
+  template:
+    src: etc/systemd/system/jenkins.service.j2
+    dest: /etc/systemd/system/jenkins.service
+  notify: restart jenkins
+
+- name: enable jenkins systemd unit
+  systemd:
+    name: jenkins
+    enabled: yes
+    daemon_reload: yes
+    state: started

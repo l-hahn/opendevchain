@@ -1,0 +1,42 @@
+---
+- name: install python3 certbot and recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - python3-certbot
+      - python3-certbot-nginx
+  register: certbot_nginx_installation
+
+- name: create letsencrypt account
+  command: 
+    cmd: |
+      certbot register
+      -m {{ letsencrypt_mail_address }} 
+      --agree-tos 
+      --noninteractive 
+      --redirect
+  when: certbot_nginx_installation.changed
+
+- name: create let's-encrypt certificates for web web_sites
+  command:
+    cmd: |
+      certbot 
+      --nginx 
+      -d {% if cert_domain is not string and cert_domain is iterable %}{{ cert_domain | join(',') }}{% else %}{{ cert_domain }}{% endif %} 
+      -m {{ letsencrypt_mail_address }} 
+      --agree-tos 
+      --noninteractive 
+      --redirect
+    creates: "/etc/letsencrypt/live/{% if cert_domain is not string and cert_domain is iterable %}{{ cert_domain[0] }}{% else %}{{ cert_domain }}{% endif %}"
+  loop: "{{ web_sites | json_query('[?letsencrypt==`true`&&state==`present`].domain') }}"
+  loop_control:
+    loop_var: cert_domain
+    label: "{% if cert_domain is not string and cert_domain is iterable %}{{ cert_domain | join(',') }}{% else %}{{ cert_domain }}{% endif %}"
+
+- name: Setup cronjob for auto renewal
+  cron:
+    name: letsencrypt
+    special_time: daily
+    job: /usr/bin/certbot -q renew

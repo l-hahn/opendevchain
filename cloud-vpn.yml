@@ -1,0 +1,49 @@
+---
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - easy-rsa
+    - vpn
+    - checkmk
+
+
+  vars:
+    users_local: []
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+
+    # easy-rsa
+    easy_rsa_servers:
+      - name: "{{ vpn_server }}"
+        state: present
+    easy_rsa_vars_conf:
+      country: "GERMANY"
+      province: "Niedersachsen"
+      city: "Wendeburg"
+      company: "Hühner Cloud"
+      mail: "{{ admin_mail_address }}"
+    easy_rsa_clients: "{{ vpn_users + vpn_apps }}"
+
+
+    # OpenVPN
+    vpn_server: "example-cloud-vpn"
+    vpn_users: "{{ users | json_query('[?contains(groups, `vpn`)].{name: name, state: state}') }}"
+    vpn_apps:
+      - name: admin.exampleapp
+        state: present
+    vpn_clients: "{{ vpn_users + vpn_apps }}"
+
+
+    # Backup
+    backup_targets:
+      file:
+        - "/etc/openvpn"
+
+
+  vars_files:
+    - "group_vars/environment.yaml"

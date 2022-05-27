@@ -1,0 +1,32 @@
+---
+- name: install coturn server
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "coturn"
+
+- name: enable coturn server
+  lineinfile:
+    path: "/etc/default/coturn"
+    regexp: '^#?TURNSERVER_ENABLED='
+    line: "TURNSERVER_ENABLED=1"
+  notify: restart coturn
+
+- name: enable coturn server
+  lineinfile:
+    path: "/etc/turnserver.conf"
+    regexp: '^#?{{ configline.split("=")[0] }}{% if configline.split("=") | length > 1 %}={% endif %}'
+    line: "{{ configline }}"
+  loop: "{{ coturn_configs }}"
+  loop_control:
+    loop_var: configline
+    label: "{{ configline }}"
+  notify: restart coturn
+
+- name: set coturn capabilities for port setting
+  capabilities:
+    path: /usr/bin/turnserver
+    capability: cap_net_bind_service=+ep
+    state: present

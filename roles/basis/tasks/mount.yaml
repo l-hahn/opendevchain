@@ -1,0 +1,20 @@
+- name: generate filesystem on mounts if not defined
+  filesystem:
+    fstype: "{{ mnt.fstype | default('ext4') }}"
+    dev: "{{ mnt.dev }}"
+  loop: "{{ mount_points }}"
+  loop_control:
+    loop_var: mnt
+    label: "{{ mnt.dev }}: {{ mnt.fstype | default('ext4') }}"
+
+- name: mount required points
+  mount:
+    path: "{{ mnt.path }}"
+    src: "{{ mnt.dev }}"
+    state: "{{ mnt.state | default('mounted') }}"
+    fstype: "{{ mnt.fstype | default('ext4') }}"
+    opts: "{{ mnt.opts | default('defaults') }}"
+  loop: "{{ mount_points }}"
+  loop_control:
+    loop_var: mnt
+    label: "{{ mnt.dev }}: {{ mnt.path }}"

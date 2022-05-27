@@ -1,0 +1,41 @@
+---
+- name: set DB related config options
+  set_fact:
+    local_db_name: "{{ db.name if 'name' in db else 'noentry' }}"
+    local_db_user: "{{ db.user if 'user' in db else 'noentry'}}"
+    local_db_pass: "{{ db.pass if 'pass' in db else 'noentry'}}"
+    local_db_user_privs: "{{ db.priv if 'priv' in db else 'all'}}"
+
+- name: "create {{ local_db_user }} user"
+  postgresql_user:
+    state: present
+    name: "{{ local_db_user }}"
+    password: "{{ local_db_pass }}"
+  become: yes
+  become_user: "{{ psql_user }}"
+  when:
+    - local_db_user != 'noentry'
+    - local_db_pass != 'noentry'
+
+- name: "setup {{ local_db_name }} database"
+  postgresql_db:
+    state: present
+    name: "{{ local_db_name }}"
+    owner: "{{ local_db_user }}"
+  become: yes
+  become_user: "{{ psql_user }}"
+  when:
+    - local_db_name != 'noentry'
+
+- name: "Grant {{ local_db_user }} user access to {{ local_db_name }} database"
+  postgresql_privs:
+    type: database
+    database: "{{ local_db_name }}"
+    roles: "{{ local_db_user }}"
+    grant_option: yes
+    privs: "{{ local_db_user_privs }}"
+  become: yes
+  become_user: "{{ psql_user }}"
+  when:
+    - local_db_name != 'noentry'
+    - local_db_user != 'noentry'

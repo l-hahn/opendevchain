@@ -1,0 +1,29 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+
+ncloud_coturn_pass: SomeRandomString
+ncloud_coturn_port: 5349
+ncloud_domain:
+  - my_domain.tld
+
+signaling_janus_deb_target: "http://ftp.de.debian.org/debian/pool/main/j/janus/janus_1.0.0-4~bpo11+1_amd64.deb"
+
+signaling_janus_api_key: MyVeryCoolApiKeyInBase64
+signaling_hash_key: VeryCoolHashKeyForSignaling
+signaling_block_key: VeryCoolBlockKeyForSignaling
+signaling_ncloud_secret_key: VerySecretKeyForNextCloud
+
+signaling_listen_host: 127.0.0.1
+signaling_listen_port: 8080
+signaling_backend_name: cloudbackend
+
+signaling_janus_host: "{{ signaling_listen_host }}"
+signaling_janus_port: 8188
+
+signaling_janus_configs:
+  - 'stun_server = "{{ ncloud_domain[0] }}"'
+  - 'stun_port = {{ ncloud_coturn_port }}'
+  - 'full_trickle = true'
+  - 'turn_rest_api_key = "{{ signaling_janus_api_key }}"'

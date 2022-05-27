@@ -1,0 +1,141 @@
+---
+- name: install nginx and recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "nginx-full"
+
+- name: setup nginx configuration file
+  template:
+    src: etc/nginx/nginx.conf.j2
+    dest: "{{ nginx_root_dir }}/nginx.conf"
+
+- name: setup nginx non-default folders
+  file:
+    state: directory
+    path: "{{ nginx_root_dir }}/{{ item }}"
+  loop:
+    - streams-available
+    - streams-enabled
+
+- name: setup document roots folder for nginx
+  file:
+    state: directory
+    path: "{{ website.root | default(www_root + '/' + website.domain) }}"
+    owner: "{{ website.owner | default(www_group) }}"
+    group: "{{ www_group }}"
+  when: website.root_setup | default(false) | bool
+  loop: "{{ web_sites }}"
+  loop_control:
+    loop_var: website
+    label: "{{ website.domain }}"
+  register: setup_doc_roots
+
+- name: setup default index.html if not exists
+  template:
+    src: index.html.j2
+    dest: "{{ website.root | default(www_root + '/' + website.domain) }}/index.html"
+    force: no
+    owner: "{{ website.owner | default(www_group) }}"
+    group: "{{ www_group }}"
+  loop: "{{ setup_doc_roots.results | json_query('[?changed==`true`].website') }}"
+  loop_control:
+    loop_var: website
+    label: "{{ website.domain }}"
+
+- name: setup sites-available virtual host config
+  template:
+    src: etc/nginx/sites-available/website.j2
+    dest: "{{ nginx_root_dir }}/sites-available/{{ website.filetag | default(website.domain) }}"
+    force: "{% if website.letsencrypt is defined and website.letsencrypt %}no{% else %}yes{% endif %}"
+  loop: "{{ web_sites | json_query('[?state==`present`&&(!stream||stream==`false`)]') }}"
+  loop_control:
+    loop_var: website
+    label: "{{ website.filetag | default(website.domain) }}"
+
+- name: setup streams-available virtual host config
+  template:
+    src: etc/nginx/streams-available/stream.j2
+    dest: "{{ nginx_root_dir }}/streams-available/{{ stream.filetag | default(stream.domain) }}"
+    force: "{% if stream.letsencrypt is defined and stream.letsencrypt %}no{% else %}yes{% endif %}"
+  loop: "{{ web_sites | json_query('[?state==`present`&&stream==`true`]') }}"
+  loop_control:
+    loop_var: stream
+    label: "{{ stream.filetag | default(stream.domain) }}"
+
+- name: configure *-enabled file site links for virtual hosts
+  file:
+    state: "link"
+    src: "{{ nginx_root_dir }}/sites-available/{{ item.filetag | default(item.domain) }}"
+    dest: "{{ nginx_root_dir }}/sites-enabled/{{ item.filetag | default(item.domain) }}"
+  loop: "{{ web_sites | json_query('[?state==`present`&&(!stream||stream==`false`)]') }}"
+  loop_control:
+    label: "{{ item.filetag | default(item.domain) }}"
+  notify: reload nginx
+
+- name: configure *-enabled file stream links for virtual hosts
+  file:
+    state: "link"
+    src: "{{ nginx_root_dir }}/streams-available/{{ stream.filetag | default(stream.domain) }}"
+    dest: "{{ nginx_root_dir }}/streams-enabled/{{ stream.filetag | default(stream.domain) }}"
+  loop: "{{ web_sites | json_query('[?state==`present`&&stream==`true`]') }}"
+  loop_control:
+    loop_var: stream
+    label: "{{ stream.filetag | default(stream.domain) }}"
+  notify: reload nginx
+
+- name: remove links for inactive virtual host sites
+  file:
+    state: "absent"
+    path: "{{ nginx_root_dir }}/sites-enabled/{{ website.filetag | default(website.domain) }}"
+  loop: "{{ web_sites | json_query('[?state==`absent`&&(!stream||stream==`false`)]') }}"
+  loop_control:
+    loop_var: website
+    label: "{{ website.filetag | default(website.domain) }}"
+  notify: reload nginx
+
+- name: remove links for inactive virtual host streams
+  file:
+    state: "absent"
+    path: "{{ nginx_root_dir }}/streams-enabled/{{ stream.filetag | default(stream.domain) }}"
+  loop: "{{ web_sites | json_query('[?state==`absent`&&stream==`true`]') }}"
+  loop_control:
+    loop_var: stream
+    label: "{{ stream.filetag | default(stream.domain) }}"
+  notify: reload nginx
+
+- name: run letsencrypt certificate generation
+  import_tasks: letsencrypt.yaml
+
+- name: setup sites-available virtual ssl host config
+  template:
+    src: etc/nginx/sites-available/website.j2
+    dest: "{{ nginx_root_dir }}/sites-available/{{ website.filetag | default(website.domain) }}"
+  loop: "{{ web_sites | json_query('[?letsencrypt==`true`&&state==`present`&&(!stream||stream==`false`)]') }}"
+  loop_control:
+    loop_var: website
+    label: "{{ website.filetag | default(website.domain) }}"
+  vars:
+    use_ssl: true
+  notify: reload nginx
+
+- name: setup streams-available virtual ssl host config
+  template:
+    src: etc/nginx/streams-available/stream.j2
+    dest: "{{ nginx_root_dir }}/streams-available/{{ stream.filetag | default(stream.domain) }}"
+  loop: "{{ web_sites | json_query('[?letsencrypt==`true`&&state==`present`&&stream==`true`]') }}"
+  loop_control:
+    loop_var: stream
+    label: "{{ stream.filetag | default(stream.domain) }}"
+  vars:
+    use_ssl: true
+  notify: reload nginx
+
+- name: enable nginx systemd unit
+  systemd:
+    name: nginx
+    enabled: yes
+    daemon_reload: yes
+    state: started

@@ -1,0 +1,19 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+
+
+java_home: "{{ java_homepath }}/java"
+
+java_version:
+  - stream: 17
+    file: 17.0.2_8
+    download: jdk-17.0.2+8
+  - stream: 11
+    file: 11.0.14.1_1
+    download: jdk-11.0.14.1+1
+    link: true
+  - stream: 8
+    file: 8u322b06
+    download: jdk8u322-b06

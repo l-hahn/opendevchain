@@ -1,0 +1,94 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - docker
+    - nginx
+    - authentik
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+
+    authentik_db:
+      type: pgsql
+      name: authentik
+      user: authentikuser
+      pass: FancyGiteaDbPasswordVeryLong
+    authentik_secret_key: LookUpDocumentationForSettingUpKey
+    authentik_admin_pass: FancyInitialAdminPasswordVeryLong!
+
+    authentik_stmp_host: "{{ mail_domain }}"
+    authentik_stmp_port: "{{ mail_port }}"
+    authentik_smtp_from: "{{ noreply_mail_address }}"
+    authentik_smtp_user: "{{ auth_mail_address }}"
+    authentik_smtp_pass: "{{ auth_mail_pass }}"
+    authentik_smpt_usessl: "true"
+
+
+    authentik_https_port: 9443
+
+    authentik_website:
+      domain: "idp.{{ domain_external }}"
+      letsencrypt: true
+      state: present
+      owner: root
+      port: 80
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        access_log: "/var/log/nginx/idp.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/idp.{{ domain_external }}-error.log"
+      pre_options: |
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
+      locations:
+        - location: "/"
+          options: |
+            proxy_pass https://localhost:{{ authentik_https_port }};
+            proxy_http_version 1.1;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            # This needs to be set inside the location block, very important.
+            proxy_set_header Host $host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+    authentik_ldaps:
+      domain: "idp.{{ domain_external }}"
+      filetag: "ldaps.idp.{{ domain_external }}"
+      letsencrypt: true
+      state: present
+      stream: true
+      owner: root
+      port: 3636
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        proxy_pass: localhost:389
+
+    # Websites
+    web_sites:
+      - "{{ authentik_website }}"
+      - "{{ authentik_ldaps }}"
+
+
+    # Backup
+    backup_targets:
+      file:
+        - "{{ gitea_data_location }}"
+        - "/etc/letsencrypt"
+
+
+
+  vars_files:
+    - "group_vars/environment.yaml"

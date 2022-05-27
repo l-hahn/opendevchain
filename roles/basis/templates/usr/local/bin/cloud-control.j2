@@ -1,0 +1,155 @@
+#!/bin/bash
+set -e
+
+
+### VARIABLE ###################################################################
+environment_folder={{ cloud_env_path }}
+environment="{{ cloud_env }}"
+host_type="{{ cloud_host_group }}"
+script_name=$(basename $0)
+cloud_name="{{ cloud_name }}"
+cloud_type="{{ cloud_type }}"
+version="{{ cloud_control_version }}"
+branch_main="{{ cloud_git_branch_main }}"
+################################################################################
+
+
+
+### FUNCTION ###################################################################
+to_working_directory() {
+    if [ ! -d $environment_folder/.git ] || [ ! -d $environment_folder ]; then
+        echo "Environment '$environment' in '$environment_folder' not available or folder not a git repository! Abort."
+        exit 1
+    fi
+    cd $environment_folder/$environment
+}
+
+help() {
+    echo "$script_name, version $version by L.Hahn"
+    echo ""
+    echo "  $cloud_name script for cloud control"
+    echo "  You can checkout environment (branches), rollout configurations,"
+    echo "  run ansible and restore entire configurations."
+    echo ""
+    echo "Usage: $script_name [command] [options]"
+    echo ""
+    echo "commands:"
+    echo "  - help                    print this help"
+    echo "  - maintenance             setup local server into maintenance mode; no automatic ansible call"
+    echo "  - environment"
+    echo "      download <branch>     checkout <branch> from remote repository"
+    echo "      update                load latest remote changes for current branch"
+    echo "      reset                 stash changes and reset current branch from remote repository with latest changes"
+    echo "      restore               checkout latest $branch_main branch from remote repository"
+    echo "  - update                  get latest roles according to environment requirements.yaml"
+    echo "  - play                 play current loaded ansible playbooks"
+    echo "  - reset                   perform 1. environment restore, 2. update, 3. execute"
+    echo ""
+    echo ""
+    echo "example:"
+    echo "~# $script_name environment update"
+    echo "  this will download changes from the currently active remote branch"
+}
+
+environment() {
+    to_working_directory
+    current_branch=$(git branch | grep "^\*" | cut -d " " -f 2)
+    current_upstream=$(git rev-parse $current_branch@{upstream})
+
+    env_option=$1
+    case $env_option in
+        "update")
+            echo "### Updating branch '$current_branch' in $environment_folder ###"
+            git pull
+            ;;
+        "reset")
+            echo "### Resetting branch '$current_branch' in $environment_folder ###"
+            git reset --hard $current_branch
+            git pull
+            ;;
+        "restore")
+            echo "### Restoring branch '$branch_main' in $environment_folder ###"
+            git reset --hard HEAD
+            git clean -f
+            git checkout $branch_main
+            git pull
+            ;;
+        "download")
+            if [ $# -lt 2 ]; then
+                echo "Missing branch name for environment downloading"
+                exit 1
+            fi
+            echo "### Stashing branch '$current_branch' & downloading branch '$2' in $environment_folder ###"
+            git stash
+            git checkout -b $2 origin/$2
+            git pull
+            ;;
+        *)
+            echo "Unknown environments option '$env_option', abort!"
+            exit 1
+            ;;
+    esac
+}
+
+maintenance() {
+    to_working_directory
+    echo "maint"
+}
+
+update() {
+    to_working_directory
+    ansible-galaxy install -f -p roles/ -r requirements.yaml
+}
+
+play() {
+    to_working_directory
+    ansible-playbook $cloud_type"-"$host_type".yaml"
+}
+################################################################################
+
+
+### MAIN #######################################################################
+if [ $# -eq 0 ]; then
+    help
+    exit 1
+fi
+script_command=$1
+
+case $script_command in
+    "help")
+        help
+        ;;
+    "maintenance")
+        maintenance
+        ;;
+    "environment")
+        if [ $# -lt 2 ]; then
+            echo "ERROR! environment command needs options! None provided."
+            echo "Call '~# $script_name help' for more information."
+            exit 1
+        fi
+        environment $2 $3
+        ;;
+    "update")
+        update
+        ;;
+    "play")
+        play
+        ;;
+    "reset")
+        echo "#=== restore environment ===#"
+        environment restore
+        echo ""
+        echo "#=== update roles ===#"
+        update
+        echo ""
+        echo "#=== play playbook ===#"
+        play
+        echo ""
+        ;;
+    *)
+        echo "Unknown command '$script_command', abort!"
+        echo "Call '~# $script_name help' for more information."
+        ;;
+esac
+################################################################################

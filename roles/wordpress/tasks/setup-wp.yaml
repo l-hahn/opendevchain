@@ -1,0 +1,70 @@
+---
+- name: set WP related config options
+  set_fact:
+    local_wp_root: "{{ wp.root | default(www_root + '/' + wp.domain) }}"
+    local_wp_owner: "{{ wp.owner | default('root') }}"
+    local_wp_version: "{{ wp.version | default('latest') }}"
+
+- name: "extract wordpress version {{ local_wp_version }} "
+  unarchive:
+    src: "{{  'https://wordpress.org/wordpress-' + local_wp_version + '.tar.gz' if local_wp_version != 'latest' else wordpress_latest_target }}"
+    dest: "/tmp"
+
+- name: "extract wordpress archive to {{ local_wp_root }}"
+  copy:
+    remote_src: yes
+    src: "/tmp/wordpress/"
+    dest: "{{ local_wp_root }}"
+    force: no
+    mode: 770
+    group: "{{ local_wp_owner }}"
+    owner: "{{ www_group }}"
+
+
+- name: "adjust permissions for {{ local_wp_owner }}"
+  file:
+    path: "{{ local_wp_root }}"
+    group: "{{ local_wp_owner }}"
+    owner: "{{ www_group }}"
+    state: directory
+    recurse: yes
+
+
+- name: generate example config
+  copy:
+    remote_src: yes
+    src: "{{ local_wp_root }}/wp-config-sample.php"
+    dest: "{{ local_wp_root }}/wp-config.php"
+    force: no
+    group: "{{ local_wp_owner }}"
+    owner: "{{ www_group }}"
+
+- name: adjust WP-config
+  lineinfile:
+    path: "{{ local_wp_root }}/wp-config.php"
+    regexp: "^define\\( '{{ item.conf }}'"
+    line: "define( '{{ item.conf }}', '{{ item.data }}' );"
+  loop:
+    - conf: "DB_NAME"
+      data: "{{ wp.db.name }}"
+    - conf: "DB_USER"
+      data: "{{ wp.db.user }}"
+    - conf: "DB_PASSWORD"
+      data: "{{ wp.db.pass }}" 
+  loop_control:
+    label: "{{ item.conf }}"
+
+- name: adjust permissions in WP root for directories
+  changed_when: false
+  command: 'find {{ local_wp_root }} -type d -exec chmod 770 {} \;'
+
+- name: adjust permissions in WP root for files
+  changed_when: false
+  command: 'find {{ local_wp_root }} -type f -exec chmod 660 {} \;'
+
+- name: link wordpress folder to non-root user
+  file:
+    src: "{{ local_wp_root }}"
+    dest: "/home/{{ local_wp_owner }}/{{ wp.domain }}"
+    state: link
+  when: local_wp_owner != 'root'

@@ -1,0 +1,8 @@
+---
+vault_usr: vault
+vault_grp: "{{ vault_usr }}"
+
+vault_link: "{{ cloud_apps }}/vault/inst"
+vault_inst: "{{ cloud_apps }}/vault/vault_{{ vault_version }}"
+vault_home: "{{ cloud_apps }}/vault/home"
+vault_log: "{{ cloud_apps }}/vault/log"

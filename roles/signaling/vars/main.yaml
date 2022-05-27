@@ -1,0 +1,3 @@
+---
+sgusr: signaling
+sggrp: "{{ sgusr }}"

@@ -1,0 +1,46 @@
+---
+- name: setup nextcloud group
+  group:
+    name: "{{ ncgrp }}"
+    state: "present"
+
+- name: setup nextcloud user
+  user:
+    name: "{{ ncusr }}"
+    group: "{{ ncgrp }}"
+    groups:
+      - "{{ ncgrp }}"
+    comment: Virtual Nextcloud User
+    shell: /sbin/nologin
+    state: present
+
+- name: setup nextcloud storage folder
+  file:
+    path: "{{ ncloud_data_location }}"
+    state: directory
+    owner: "{{ www_group }}"
+    group: "{{ ncgrp }}"
+    mode: "o="
+
+
+- name: install nextcloud recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "libxml2"
+      - "openssl"
+      - "ffmpeg"
+      - "libreoffice"
+      - "redis-server"
+      - "unzip"
+
+- name: install basic nextcloud
+  include_tasks: nextcloud.yaml
+
+- name: install notify_push (file high-performance-backend)
+  include_tasks: file_hpb.yaml
+
+- name: install coturn server
+  include_tasks: coturn.yaml

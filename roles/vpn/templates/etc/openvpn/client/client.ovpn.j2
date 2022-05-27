@@ -1,0 +1,29 @@
+client
+dev tun
+proto {{ vpn_protocol }}
+remote {{ vpn_host }} {{ vpn_port }}
+remote-cert-tls server
+key-direction 1
+cipher AES-256-CBC
+auth SHA512
+auth-nocache
+tls-version-min 1.2
+tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-CBC-SHA256
+comp-lzo
+nobind
+persist-key
+persist-tun
+mute-replay-warnings
+verb 3
+<ca>
+{{ lookup("file", easy_rsa_home + "/pki/ca.crt") }}
+</ca>
+<cert>
+{{ lookup("file", easy_rsa_home + "/pki/issued/" + client + ".crt") }}
+</cert>
+<key>
+{{ lookup("file", easy_rsa_home + "/pki/private/" + client + ".key") }}
+</key>
+<tls-auth>
+{{ lookup("file", vpn_tlsauth_key_file) }}
+</tls-auth>

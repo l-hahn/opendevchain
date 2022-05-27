@@ -1,0 +1,50 @@
+---
+- name: install requirements for docker
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg2
+      - software-properties-common
+      - curl
+
+- name: install java Adoptium Temurin repository key
+  apt_key: 
+    url: https://packages.adoptium.net/artifactory/api/gpg/key/public
+    state: present
+
+- name: install Adoptium Temurin repository
+  apt_repository:
+    repo: "deb https://packages.adoptium.net/artifactory/deb {{ ansible_distribution_release }} main"
+    state: present
+
+- name: setup java directory
+  file:
+    state: directory
+    path: "{{ java_homepath }}"
+    mode: 0755
+
+- name: download Adoptium Eclipse Temurin JDK
+  unarchive:
+    src: "https://github.com/adoptium/temurin{{ java.stream }}-binaries/releases/download/{{ java.download }}/OpenJDK{{ java.stream }}U-jdk_x64_linux_hotspot_{{ java.file }}.tar.gz"
+    dest: "{{ java_homepath }}"
+    creates: "{{ java_homepath }}/{{ java.download }}"
+    remote_src: true
+    mode: 0755
+  loop: "{{ java_version }}"
+  loop_control:
+    loop_var: java
+    label: "{{ java.download }}"
+
+- name: setup generic java link
+  file:
+    state: link
+    src: "{{ java_homepath }}/{{ java.download }}"
+    dest: "{{ java_home }}"
+  loop: "{{ java_version | json_query('[?link==`true`]') }}"
+  loop_control:
+    loop_var: java
+    label: "{{ java.download }}"

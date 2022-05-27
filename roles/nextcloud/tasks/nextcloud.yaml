@@ -1,0 +1,111 @@
+---
+- name: download nextcloud and unarchive
+  unarchive:
+    src: "https://download.nextcloud.com/server/releases/nextcloud-{{ nextcloud_version }}.zip"
+    dest: "{{ cloud_apps }}"
+    remote_src: yes
+    owner: "{{ www_group }}"
+    group: "{{ ncgrp }}"
+    mode: "o="
+    creates: "{{ ncloud_dir }}"
+
+- name: install nextcloud
+  command:
+    chdir: "{{ ncloud_dir }}"
+    creates: "{{ ncloud_data_location }}/index.html"
+    cmd: >
+      php occ maintenance:install
+      --database '{{ ncloud_db.type }}'
+      --database-name '{{ ncloud_db.name }}'
+      --database-user '{{ ncloud_db.user }}'
+      --database-pass '{{ ncloud_db.pass }}'
+      --admin-user '{{ ncloud_admin_user }}'
+      --admin-pass '{{ ncloud_admin_pass }}'
+      --data-dir '{{ ncloud_data_location }}'
+  become: yes
+  become_user: "{{ www_group }}"
+  register: ncloud_installation
+
+- name: set nextcloud folder permission
+  file:
+    path: "{{ ncloud_data_location }}"
+    owner: "{{ www_group }}"
+    group: "{{ ncusr }}"
+    mode: "o="
+    recurse: yes
+
+- name: configure php cron jobs
+  cron: 
+    name: nextcloud-php
+    minute: "*/5"
+    job: "php -f {{ ncloud_dir }}/cron.php"
+    user: "{{ www_group }}"
+
+- name: configure local memory caching APCu
+  lineinfile:
+    path: "{{ ncloud_dir }}/config/config.php"
+    regexp: "\\s*'memcache.local' => "
+    line: "  'memcache.local' => '\\OC\\Memcache\\APCu',"
+    insertbefore: "\\);"
+  when: ncloud_installation.changed
+
+- name: configure redis conig
+  lineinfile:
+    path: "/etc/redis/redis.conf"
+    regexp: "(# |){{ item.key }} "
+    line: "{{ item.key }} {{ item.value }}"
+  loop:
+    - key: unixsocket
+      value: "{{ redis_socket }}"
+    - key: unixsocketperm
+      value: 775
+    - key: bind
+      value: 127.0.0.1
+    - key: daemonize
+      value: !unsafe yes
+    - key: stop-writes-on-bgsave-error
+      value: !unsafe no
+    - key: rdbcompression
+      value: !unsafe yes
+    - key: maxmemory
+      value: 50M
+    - key: maxmemory-policy
+      value: allkeys-lru
+  when: redis_remote_url | length == 0
+  notify: restart redis
+
+- name: configure distributed memory caching APCu
+  lineinfile:
+    path: "{{ ncloud_dir }}/config/config.php"
+    regexp: "\\s*'{{ item.key }}' => "
+    line: "  '{{ item.key }}' => {{ item.value }},"
+    insertbefore: "\\);"
+  loop:
+     - key: memcache.locking
+       value: "'\\OC\\Memcache\\Redis'"
+#    - key: memcache.distributed
+#      value: "'\\OC\\Memcache\\Redis'"
+#    - key: redis
+#      value: "['host' => '{% if redis_remote_url | length > 0 %}{{ redis_remote_url }}{% else %}{{ redis_socket }}{% endif %}','port' => {% if redis_remote_url | length > 0 %}{{ redis_port }}{% else %}0{% endif %}]"
+  loop_control:
+    label: "{{ item.key }}"
+  when: ncloud_installation.changed
+
+- name: configure other settings
+  lineinfile:
+    path: "{{ ncloud_dir }}/config/config.php"
+    regexp: "\\s*'{{ item.key }}' => "
+    line: "  '{{ item.key }}' => {{ item.value }},"
+    insertbefore: "\\);"
+  loop: "{{ ncloud_config }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: ncloud_installation.changed
+
+
+- name: configure nextcloud domain
+  replace:
+    path: "{{ ncloud_dir }}/config/config.php"
+    regexp: "^\\s*'trusted_domains'\\s*=>\\s*array\\s*\\((.*\\n)+\\s*\\),$"
+    replace: "  'trusted_domains' => \\n  array ({% for domain in ncloud_domain %}\\n    {{ loop.index - 1}} => '{{ domain }}',{% endfor %}\\n  ),"
+  when: ncloud_installation.changed

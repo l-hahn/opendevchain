@@ -1,0 +1,12 @@
+---
+backup_conf: "{{ backup_folder }}/conf"
+
+backup_conf_db_sep: ":"
+
+backup_storage:
+  mail:
+    path: "{{ backup_folder }}/mail"
+  db:
+    path: "{{ backup_folder }}/db"
+  file:
+    path: "{{ backup_folder }}/file"

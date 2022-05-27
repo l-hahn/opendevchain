@@ -1,0 +1,31 @@
+---
+- name: install janus from deb file
+  apt:
+    deb: "{{ signaling_janus_deb_target }}"
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+
+- name: configure janus server
+  lineinfile:
+    path: "/etc/janus/janus.jcfg"
+    regexp: '^\s*#?{{ configline.split("=")[0] }}{% if configline.split("=") | length > 1 %}={% endif %}'
+    line: "        {{ configline }}"
+  loop: "{{ signaling_janus_configs }}"
+  loop_control:
+    loop_var: configline
+    label: '{{ configline.split("=")[0] }}'
+  notify: restart janus
+
+- name: configure janus network
+  lineinfile:
+    path: "/etc/janus/janus.transport.http.jcfg"
+    regexp: '^\s*#?interface ='
+    line: '        interface = "lo"'
+  notify: restart janus
+
+- name: configure janus network
+  lineinfile:
+    path: "/etc/janus/janus.transport.websockets.jcfg"
+    regexp: '^\s*#?ws_interface ='
+    line: '        ws_interface = "lo"'
+  notify: restart janus

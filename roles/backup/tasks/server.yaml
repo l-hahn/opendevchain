@@ -1,0 +1,27 @@
+---
+- name: analyse backup hours for pulling server
+  set_fact:
+    backup_times_server_hour: "{{ backup_times_server_hour | default([]) + [item + backup_hour_shift] }}"
+  loop: "{{ backup_times_hour }}"
+
+- name: generate backup user ssh key
+  user:
+    name: "{{ backup_owner }}"
+    generate_ssh_key: yes
+    ssh_key_type: rsa
+    ssh_key_bits: 4096
+    home: "{{ backup_folder }}"
+
+- name: template main server backup pull script
+  template:
+    src: backup/backup_from_clients.sh.j2
+    dest: "{{ backup_folder }}/pull-backup.sh"
+    mode: 0740
+
+- name: setup cronjob for server backup pull
+  cron:
+    name: "pull backups"
+    weekday: "{{ backup_times_weekday }}"
+    hour: "{{ backup_times_server_hour | join(',') }}"
+    minute: "{{ backup_times_minute }}"
+    job: "{{ backup_folder }}/pull-backup.sh"

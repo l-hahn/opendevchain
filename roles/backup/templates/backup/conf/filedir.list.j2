@@ -1,0 +1,5 @@
+{% if 'file' in backup_targets %}
+{% for filedir in backup_targets.file %}
+{{ filedir }}
+{% endfor %}
+{% endif %}

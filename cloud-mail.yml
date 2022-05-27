@@ -1,0 +1,36 @@
+---
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - docker
+    - mailcow
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+
+    # Mailcow
+    mailcow_db_root_pass: FancyInitialRootPasswordVeryLong
+    mailcow_db_pass: FancyInitialDBPasswordVeryLong
+    mailcow_use_sogo: true
+    mailcow_use_solr: true
+    mailcow_use_clamav: true
+
+
+    # Backup
+    backup_client_script_envs:
+      - var: "MAILCOW_BACKUP_LOCATION"
+        value: "/tmp"
+    backup_client_scripts:
+      - /app/mailcow/helper-scripts/backup_and_restore.sh backup all
+      - "mv /tmp/mailcow-* {{ backup_folder }}/mail/"
+
+
+  vars_files:
+    - "group_vars/environment.yaml"

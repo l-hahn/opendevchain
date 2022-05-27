@@ -1,0 +1,41 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+
+gitea_data_location: "{{ cloud_storage }}/gitea-data"
+
+gitea_db:
+  type: pgsql
+  name: gitea_db
+  user: gitea_dbu
+  pass: gitea_dbpw
+  port: 5432
+  host: localhost
+
+gitea_version: 1.16.7
+
+gitea_source: https://dl.gitea.io/gitea
+gitea_arch: linux-amd64
+
+gitea_domain: localhost
+gitea_domain_protocol: https
+gitea_port: 3000
+gitea_ssh_domain: localhost
+
+gitea_internal_token: INTERNAL_TOKEN
+gitea_jwt_secret: JWT_SECRET
+gitea_secret_key: SECRET_KEY
+
+gitea_mail: true
+gitea_mail_type: smtp
+gitea_mail_tls: true
+gitea_mail_domain: mail.my-domain.tld
+gitea_mail_port: 465
+gitea_mail_user: user@my-domain.tld
+gitea_mail_from: "{{ gitea_mail_user }}"
+gitea_mail_pass: ThisCouldBeYourAdd
+
+gitea_admin_user: gitea_adm
+gitea_admin_pass: gitea_fancy_adm_password!
+gitea_admin_mail: "{{ gitea_mail_user }}"

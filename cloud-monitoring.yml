@@ -1,0 +1,55 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - nginx
+    - checkmk
+
+  vars:
+    users_local: []
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+
+    checkmk_is_server: true
+    checkmk_admin_pass: FancyInitialAdminPasswordVeryLong!
+
+    checkmk_website:
+      domain: "monitoring.{{ domain_external }}"
+      letsencrypt: true
+      filetag: "monitoring.{{ domain_external }}"
+      state: present
+      port: 80
+      root: noroot
+      root_setup: false
+      index: noindex
+      options:
+        access_log: "/var/log/nginx/monitoring.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/monitoring.{{ domain_external }}-error.log"
+      locations:
+        - location: '~* /\w+'
+          options: |
+            proxy_pass http://127.0.0.1:5000;
+            proxy_pass_header Authorization;
+            proxy_set_header X-Real-IP  $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_buffering off;
+            proxy_request_buffering off;
+            client_max_body_size 0;
+            proxy_read_timeout  36000s;
+            proxy_ssl_session_reuse off;
+            proxy_hide_header x-frame-options;
+        - location: '= /'
+          options: |
+            return 444;
+
+    web_sites:
+      - "{{ checkmk_website }}"
+
+  vars_files:
+    - "group_vars/{{ ansible_local.preferences.ansible.environment }}.yaml"

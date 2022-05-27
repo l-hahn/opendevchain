@@ -1,0 +1,53 @@
+---
+#a rather good selection for most apps
+php_modules_base:
+  - "php{{ php_version }}-apcu"
+  - "php{{ php_version }}-bz2"
+  - "php{{ php_version }}-ctype"
+  - "php{{ php_version }}-curl"
+  - "php{{ php_version }}-dom"
+  - "php{{ php_version }}-fpm"
+  - "php{{ php_version }}-fileinfo"
+  - "php{{ php_version }}-gd"
+  - "php{{ php_version }}-gmp"
+  - "php{{ php_version }}-imagick"
+  - "php{{ php_version }}-intl"
+  - "php{{ php_version }}-mbstring"
+  - "php{{ php_version }}-memcached"
+  - "php{{ php_version }}-mysql"
+  - "php{{ php_version }}-pdo-pgsql"
+  - "php{{ php_version }}-posix"
+  - "php{{ php_version }}-redis"
+  - "php{{ php_version }}-simplexml"
+  - "php{{ php_version }}-xmlreader"
+  - "php{{ php_version }}-xmlwriter"
+  - "php{{ php_version }}-zip"
+  
+
+php_path: "/etc/php/{{ php_version }}"
+
+php_fpm_config_default:
+  - key: memory_limit
+    value: "{{ php_memory_limit }}"
+  - key: upload_max_filesize
+    value: "{{ php_upload_max_filesize }}"
+  - key: post_max_size
+    value: "{{ php_post_max_size }}"
+  - key: opcache.interned_strings_buffer
+    value: "{{ php_opcache_interned_strings_buffer }}"
+  - key: opcache.save_comments
+    value: "{{ php_opcache_save_comments }}"
+  - key: opcache.revalidate_freq
+    value: "{{ php_opcache_revalidate_freq }}"
+  - key: opcache.validate_timestamps
+    value: "{{ php_opcache_validate_timestamps }}"
+
+php_fpm_poolconf_default:
+  - key: pm.max_children
+    value: "{{ php_pm_max_children }}"
+  - key: pm.start_servers
+    value: "{{ php_pm_start_servers }}"
+  - key: pm.min_spare_servers
+    value: "{{ php_pm_min_spare_servers }}"
+  - key: pm.max_spare_servers
+    value: "{{ php_pm_max_spare_servers }}"

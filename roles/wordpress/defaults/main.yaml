@@ -1,0 +1,22 @@
+---
+cloud_update: false
+cloud_apps: /opt
+download_folder: "{{ cloud_apps }}/download-tmp"
+shared_group: "cloud"
+
+
+www_root: /var/www
+www_group: www-data
+
+web_sites:
+  - domain: my-domain.tld
+    state: present
+    owner: user
+    root: "{{ www_root }}/my-domain.tld"
+    version: latest
+    worpress: true
+    db:
+      type: mariadb
+      name: db_name
+      user: db_user
+      pass: db_pass

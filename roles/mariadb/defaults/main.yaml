@@ -1,0 +1,17 @@
+---
+cloud_update: false
+
+mariadb_version: 10.7.1
+
+#mariadb root pass; defaults to empty
+mariadb_root_pass: 
+
+db_configs:
+  - type: mariadb
+    name: db_name
+    user: db_user
+    pass: db_user_password
+    priv: ALL
+
+mariadb_remote_root_login: false
+mariadb_local_sock: "/var/run/mysqld/mysqld.sock"

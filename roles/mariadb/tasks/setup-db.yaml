@@ -1,0 +1,35 @@
+---
+- name: set DB related config options
+  set_fact:
+    local_db_name: "{{ db.name if 'name' in db else 'noentry' }}"
+    local_db_user: "{{ db.user if 'user' in db else 'noentry' }}"
+    local_db_pass: "{{ db.pass if 'pass' in db else 'noentry' }}"
+    local_db_user_prives: "{{ db.priv if 'priv' in db else 'ALL' }}"
+
+- name: "create {{ local_db_user }} user"
+  mysql_user:
+    name: "{{ local_db_user }}"
+    password: "{{ local_db_pass }}"
+    state: present
+    login_unix_socket: "{{ mariadb_local_sock }}"
+  when:
+    - local_db_user != 'noentry'
+    - local_db_pass != 'noentry'
+
+- name: "setup {{ local_db_name }} database"
+  mysql_db:
+    name: "{{ local_db_name }}"
+    state: present
+    login_unix_socket: "{{ mariadb_local_sock }}"
+  when:
+    - local_db_name != 'noentry'
+
+- name: "Grant privs '{{ local_db_user_prives }}' for user '{{ local_db_user }}' to database '{{ local_db_name }}'"
+  mysql_user:
+    append_privs: yes
+    name: "{{ local_db_user }}"
+    priv: "{{local_db_name}}.*:{{ local_db_user_prives }}"
+    login_unix_socket: "{{ mariadb_local_sock }}"
+  when:
+    - local_db_user != 'noentry'
+    - local_db_name != 'noentry'

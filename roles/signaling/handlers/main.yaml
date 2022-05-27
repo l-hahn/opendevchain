@@ -1,0 +1,11 @@
+---
+- name: restart janus
+  systemd:
+    name: janus
+    state: restarted
+
+- name: restart signaling
+  systemd:
+    name: signaling
+    state: restarted
+    daemon_reload: yes    

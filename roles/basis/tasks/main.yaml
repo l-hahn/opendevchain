@@ -1,0 +1,60 @@
+---
+- name: Limit access to cloude home only for root
+  file:
+    state: directory
+    path: "{{ cloud_home }}"
+    owner: root
+    group: root
+    mode: 0700
+    recurse: yes
+
+- name: Install basic apps via apt
+  apt:
+    update_cache: yes
+    autoclean: yes
+    autoremove: yes
+    state: latest
+    install_recommends: yes
+    pkg: "{{ basis_apps }}"
+
+- name: set timezone
+  timezone:
+    name: "{{ cloud_tzdata }}"
+
+- name: Setup hahn-cloud users
+  import_tasks: users.yaml
+
+- name: Setup and configure sshd service
+  import_tasks: sshd.yaml
+
+- name: Setup and configure fail2ban service
+  import_tasks: fail2ban.yaml
+
+- name: Setup and configure cloud control script
+  import_tasks: cloud_control.yaml
+
+- name: Setup mount points
+  import_tasks: mount.yaml
+
+- name: Setup swap
+  import_tasks: swap.yaml
+  when: swap_on
+
+- name: Setup basic cloud folders for apps and storage
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: "{{ shared_group }}"
+  loop:
+    - "{{ cloud_apps }}"
+    - "{{ cloud_storage }}"
+
+- name: Setup shared python environment for all hcs users
+  file:
+    state: directory
+    path: "{{ cloud_python_envs }}"
+    mode: 0755
+    owner: root
+    group: "{{ shared_group }}"

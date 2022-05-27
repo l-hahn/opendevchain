@@ -1,0 +1,26 @@
+---
+cloud_update: false
+
+sysctl_configs:
+  - net.ipv4.ip_forward=1
+
+vpn_host: "vpn.{{ domain_external | default('my-domain.tld') }}"
+vpn_protocol: "udp"
+vpn_server: "cloud-openvpn"
+vpn_cidr: 10.10.10.0
+vpn_mask: 255.255.255.0
+vpn_port: 1194
+vpn_log: /var/log/openvpn/openvpn.log
+vpn_dns:
+  - 208.67.222.222
+  - 208.67.220.220
+
+vpn_clients:
+  - name: username
+    state: present
+
+easy_rsa_home: "/usr/share/easy-rsa"
+
+easy_rsa_clients:
+  - name: easyrsa_username
+    state: present

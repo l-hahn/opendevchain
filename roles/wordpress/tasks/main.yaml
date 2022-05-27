@@ -1,0 +1,25 @@
+---
+- name: setup download folder
+  file:
+    state: directory
+    path: "{{ download_folder }}"
+
+- name: setup wordpress folder
+  file:
+    state: directory
+    path: "{{ cloud_apps }}/wordpress"
+    mode: 0770
+    owner: "{{ www_group }}"
+    group: "{{ shared_group }}"
+
+- name: download latest wordpress version
+  get_url:
+    url: https://wordpress.org/latest.tar.gz
+    dest: "{{ wordpress_latest_target }}"
+
+- name: setup WordPress websites
+  include_tasks: setup-wp.yaml
+  loop: "{{ web_sites | json_query('[?wordpress==`true`&&state==`present`]') }}"
+  loop_control:
+    loop_var: wp
+    label: "{{ wp.domain }}"

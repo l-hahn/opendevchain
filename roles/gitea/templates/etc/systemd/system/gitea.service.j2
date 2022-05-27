@@ -1,0 +1,27 @@
+[Unit]
+Description=Gitea (Git with a cup of tea)
+After=syslog.target
+After=network.target
+Wants=postgresql.service
+After=postgresql.service
+#Wants=memcached.service
+#After=memcached.service
+#Wants=redis.service
+#After=redis.service
+
+
+[Service]
+#LimitMEMLOCK=infinity
+#LimitNOFILE=65535
+RestartSec=2s
+Type=simple
+User={{ gitea_usr }}
+Group={{ gitea_grp }}
+WorkingDirectory={{ gitea_data_location }}
+ExecStart={{ gitea_link }}/gitea web --config {{ gitea_home }}/app.ini
+Restart=always
+Environment=USER={{ gitea_usr }} HOME={{ gitea_home }} GITEA_WORK_DIR={{ gitea_data_location }}
+#Environment=PATH=/path/to/git/bin:/bin:/sbin:/usr/bin:/usr/sbin
+
+[Install]
+WantedBy=multi-user.target

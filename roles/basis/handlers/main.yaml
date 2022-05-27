@@ -1,0 +1,12 @@
+---
+- name: restart sshd service
+  service:
+    name: sshd
+    state: restarted
+    enabled: yes
+
+- name: restart fail2ban service
+  service:
+    name: fail2ban
+    state: restarted
+    enabled: yes

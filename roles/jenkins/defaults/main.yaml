@@ -1,0 +1,24 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+
+
+java_home: "{{ cloud_apps }}/java_jdk/java"
+
+www_group: www-data
+
+
+jenkins_version: 2.332.3
+
+jenkins_source: https://get.jenkins.io
+jenkins_download: "war{% if jenkins_stream_stable | default('true') | bool %}-stable{% endif %}/{{ jenkins_version }}"
+jenkins_file: "jenkins.war"
+
+jenkins_port: 8080
+
+jenkins_log: false
+
+jenkins_data_location: "{{ cloud_storage }}/jenkins-data"
+
+jenkins_java_home: "{{ java_home }}"

@@ -1,0 +1,34 @@
+---
+# Basics
+- name: install requirements for backup system
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - rsync
+
+- name: setup storage folders for backup
+  file:
+    state: directory
+    path: "{{ dir.value.path }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "{{ backup_permission }}"
+  with_dict: "{{ backup_storage }}"
+  loop_control:
+    loop_var: dir
+    label: "{{ dir.key }}"
+
+- name: setup conf folder
+  file:
+    state: directory
+    path: "{{ backup_folder }}/conf"
+
+- name: setup client backup structure
+  include_tasks: client.yaml
+  when: backup_client
+
+- name: setup server backup structure
+  include_tasks: server.yaml
+  when: not backup_client

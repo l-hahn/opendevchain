@@ -1,0 +1,21 @@
+---
+- name: install OpenSSH server
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg: openssh-server
+
+- name: setup sshd_config
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    regexp: '^#?{{ configline.split(" ")[0] }}{% if configline.split(" ") | length > 1 %} {% endif %}'
+    line: "{{ configline }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ ssh_configs }}"
+  loop_control:
+    loop_var: configline
+    label: "{{ configline }}"
+  notify: restart sshd service

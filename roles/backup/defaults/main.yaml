@@ -1,0 +1,67 @@
+---
+cloud_update: false
+cloud_apps: /opt
+ssh_port: 1802
+
+# clients push only daily backup
+# server (!= client) will then pull daily backups
+backup_client: true
+
+# Server should pull 1 hour later the backups.
+backup_hour_shift: 1
+
+backup_times_weekday: "*"
+backup_times_hour:
+  - 6
+  - 10
+  - 14
+  - 18
+  - 22
+backup_times_minute: 0
+
+backup_keep_days: 7
+
+backup_owner: backup
+backup_owner_ssh_key: "ssh-rsa THEREISSUCHRSAKEYYET"
+backup_group: "{{ backup_owner }}"
+backup_permission: 0770
+
+backup_hosts:
+  - name: server1-name
+    domain: host1.my-domain.tld
+    ip: 001.112.223.123
+  - name: server2-name
+    domain: host2.my-domain.tld
+
+backup_folder: "{{ cloud_apps }}/backup"
+
+#backup_client_scripts:
+#  - /path/to/script -param
+backup_client_scripts: []
+#backup_client_script_envs:
+#  - var: VAR_NAME
+#    path: /some/path
+#  - var: VAR_NAME
+#    value: some_value
+backup_client_script_envs: []
+
+backup_lock: "{{ backup_folder }}/backup.lock"
+
+#backup_targets:
+#  db:
+#    - type: mariadb
+#      name: db_name_mdb
+#    - type: pgsql
+#      name: db_name_pg
+#  mail:
+#    - type: file
+#      path: /path/to/some/file
+#    - type: mariadb
+#      name: db_name_mdb_mail
+#  file:
+#    - /path/to/some/file
+#    - /path/to/some/dir
+backup_targets:
+  db: []
+  mail: []
+  file: []

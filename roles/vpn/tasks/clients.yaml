@@ -1,0 +1,57 @@
+---
+- name: install client ovpn configs
+  template:
+    src: etc/openvpn/client/client.ovpn.j2
+    dest: "{{ vpn_home }}/client/{{ client }}.ovpn"
+    mode: 0600
+    owner: root
+    group: vpn
+  loop: "{{ vpn_clients_active }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client }}"
+
+- name: find abstent clients ovpn config
+  find:
+    paths: "{{ vpn_home }}/client/"
+    pattern: "{{ client }}.*"
+  loop: "{{ vpn_clients_passive }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client }}"
+  register: absent_clients
+
+- name: remove absent clients ovpn config
+  file:
+    state: absent
+    path: "{{ client }}"
+  loop: "{{ absent_clients.results | json_query('[*].files[*].path') | flatten }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client | basename }}"
+  when: absent_clients.results | length > 0
+
+- name: setup OpenVPN config folder for each vpn client
+  file:
+    state: directory
+    path: "/home/{{ user }}/.openvpn"
+    mode: 0700
+    owner: "{{ user }}"
+    group: "{{ user }}"
+  loop: "{{ vpn_clients_active | map('regex_replace','\\.[^\\.]+$','') | list | unique }}"
+  loop_control:
+    loop_var: user
+    label: "{{ user }}"
+
+- name: rollout .ovpn single-file config for active clients
+  copy:
+    src: "{{ vpn_home }}/client/{{ client }}.ovpn"
+    dest: "/home/{{ client.split('.')[0] }}/.openvpn/"
+    mode: 0400
+    owner: "{{ client.split('.')[0] }}"
+    group: "{{ client.split('.')[0] }}"
+  loop: "{{ vpn_clients_active }}"
+  loop_control:
+    loop_var: client
+    label: "{{ client }}"
+  

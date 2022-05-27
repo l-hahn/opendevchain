@@ -1,0 +1,3 @@
+---
+authentik_inst: "{{ authentik_dir }}/authentik_{{ authentik_version }}"
+authentik_link: "{{ authentik_dir }}/inst"

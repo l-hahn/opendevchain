@@ -1,0 +1,30 @@
+---
+- name: install fail2ban service
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg: fail2ban
+
+- name: setup fail2ban config jail.local
+  template:
+    backup: yes
+    src: "templates{{ fail2ban_jail_conf }}.j2"
+    dest: "{{ fail2ban_jail_conf }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart fail2ban service
+
+- name: Install fail2ban filter plugins nginx
+  template:
+    src: "templates{{ fail2ban_path }}/filter.d/{{ filter }}.local.j2"
+    dest: "{{ fail2ban_path }}/filter.d/{{ filter }}.local"
+    owner: root
+    group: root
+    mode: 0644
+  loop: "{{ fail2ban_nginx_filter }}"
+  loop_control:
+    label: "{{ filter }}"
+    loop_var: filter
+  notify: restart fail2ban service

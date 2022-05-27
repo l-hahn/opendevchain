@@ -1,0 +1,45 @@
+---
+- name: install requirements for checkmk
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - python3-passlib
+
+
+- name: install checkmk from deb file
+  apt:
+    deb: "{{ checkmk_server_source }}"
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+
+# apache2 is default installed via e.g. deb file
+# in order to run e.g. nginx as webserver, we should disable it
+- name: adjust apache2 systemd unit state
+  systemd:
+    name: apache2
+    enabled: "{{ checkmk_system_apache2 | default('no') | bool }}"
+    daemon_reload: yes
+
+- name: generate checkmk sites
+  command:
+    cmd: "omd create {{ item }}"
+    creates: "/omd/sites/{{ item }}"
+  notify: restart omd
+  loop: "{{ checkmk_server_sites }}"
+
+- name: setup admin password for sites
+  htpasswd:
+    path: "/omd/sites/{{ cmk_site }}/etc/htpasswd"
+    name: "{{ checkmk_admin_user }}"
+    password: "{{ checkmk_admin_pass }}"
+    owner: "{{ cmk_site }}"
+    group: "{{ cmk_site }}"
+    mode: 0660
+  become: yes
+  become_user: "{{ cmk_site }}"
+  loop: "{{ checkmk_server_sites }}"
+  loop_control:
+    loop_var: cmk_site
+    label: "site: {{ cmk_site }}"

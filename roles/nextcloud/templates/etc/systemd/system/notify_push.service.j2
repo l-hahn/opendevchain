@@ -1,0 +1,12 @@
+[Unit]
+Description=Push daemon for Nextcloud clients
+Documentation=https://github.com/nextcloud/notify_push
+
+[Service]
+Environment=PORT={{ ncloud_npush_port }}
+Environment=NEXTCLOUD_URL=https://{{ ncloud_domain[0] }}
+ExecStart={{ ncloud_dir }}/apps/notify_push/bin/x86_64/notify_push {{ ncloud_dir }}/config/config.php
+User={{ www_group }}
+
+[Install]
+WantedBy = multi-user.target

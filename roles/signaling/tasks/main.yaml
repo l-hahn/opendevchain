@@ -1,0 +1,63 @@
+---
+- name: setup signaling group
+  group:
+    name: "{{ sggrp }}"
+    state: "present"
+
+- name: setup signaling user
+  user:
+    name: "{{ sgusr }}"
+    group: "{{ sggrp }}"
+    groups:
+      - "{{ sggrp }}"
+    comment: Virtual Signaling User
+    shell: /sbin/nologin
+    state: present
+
+- name: install requirements for signaling
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - make
+      - golang-go
+      - libsrtp2-1
+
+- name: clone signaling server
+  git:
+    repo: https://github.com/strukturag/nextcloud-spreed-signaling.git
+    dest: "{{ cloud_apps }}/signaling-server"
+  notify: restart signaling
+  register: clone_signaling
+
+- name: build signaling server
+  make:
+    chdir: "{{ cloud_apps }}/signaling-server"
+    target: build
+  when: clone_signaling.changed
+
+- name: configure signaling server
+  template:
+    src: "app/signaling-server/server.conf.j2"
+    dest: "{{ cloud_apps }}/signaling-server/server.conf"
+    owner: "{{ sgusr }}"
+    group: "{{ sggrp }}"
+    mode: "o="
+  notify: restart signaling
+
+- include_tasks: janus.yaml
+
+- include_tasks: nats.yaml
+
+- name: setup signaling systemd service unit
+  template:
+    src: "etc/systemd/system/signaling.service.j2"
+    dest: "/etc/systemd/system/signaling.service"
+
+- name: enable signaling systemd unit
+  systemd:
+    name: signaling
+    enabled: yes
+    daemon_reload: yes
+    state: started

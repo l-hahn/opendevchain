@@ -1,0 +1,19 @@
+{% if stream.pre_options is defined %}
+{{ stream.pre_options }}
+{% endif %}
+server {
+        listen {{ stream.port | default(8080) }} {% if use_ssl is defined and use_ssl %}ssl{% endif %}{% if stream.port_option is defined and stream.port_option != '' %}{{ stream.port_option }}{% endif %};
+        listen [::]:{{ stream.port | default(8080) }} {% if use_ssl is defined and use_ssl %}ssl{% endif %}{% if stream.port_option is defined and stream.port_option != '' %}{{ stream.port_option }}{% endif %};
+
+{% if stream.options is defined %}
+{% for key in stream.options.keys() %}
+        {{ key }} {{ stream.options[key] }};
+{% endfor %}
+{% endif %}
+
+{% if use_ssl is defined and use_ssl %}
+        ssl_certificate /etc/letsencrypt/live/{% if stream.domain is not string and stream.domain is iterable %}{{ stream.domain[0] }}{% else %}{{ stream.domain }}{% endif %}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{% if stream.domain is not string and stream.domain is iterable %}{{ stream.domain[0] }}{% else %}{{ stream.domain }}{% endif %}/privkey.pem;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+{% endif %}
+}

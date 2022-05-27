@@ -1,0 +1,86 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+cloud_name: "example-cloud"
+cloud_home: "/{{ cloud_name }}"
+cloud_host_group: "example-playbook"
+cloud_env: "example_env"
+cloud_env_path: "{{ cloud_home }}/{{ cloud_env }}"
+cloud_control_name: "cloud-control"
+cloud_apps: "/app"
+cloud_storage: "/storage"
+cloud_stage: "production"
+
+backup_folder: "/backup"
+backup_times_hour:
+  - 20
+
+basis_apps:
+  - passwd
+  - python3-jmespath
+  - python3-psycopg2
+  - vim
+
+domain_external: "my-domain.tld"
+cloud_python_envs: "{{ cloud_apps }}/py-env"
+
+admin_mail_address: "admin@{{ domain_external }}"
+noreply_mail_address: "noreply@{{ domain_external }}"
+letsencrypt_mail_address: "{{ admin_mail_address }}"
+
+development_mail_address: "development@{{ domain_external }}"
+development_mail_pass: MyVeryCoolPassword!
+
+auth_mail_address: "auth@{{ domain_external }}"
+auth_mail_pass: MyVeryCoolPassword!
+
+mail_domain: "mail.{{ domain_external }}"
+mail_port: 465
+mail_ssl: true
+
+shared_group: "cloud"
+
+backup_owner_ssh_key: "ssh-rsa SomeFancyRSAKeyThatIsPreDefined"
+
+users_admin:
+  - name: admin
+    displayname: Admin User
+    shell: /bin/bash
+    groups:
+      - admin
+      - adm
+      - systemd-journal
+      - staff
+      - sudo
+      - vpn
+    state: present
+    ssh_key: "ssh-rsa AdminUserSshKeyThatIsPreDefined"
+
+ssh_port: 22
+default_groups:
+  - ssh
+  - users
+  - systemd-journal
+  - "{{ shared_group }}"
+
+ssh_configs:
+  - Protocol 2
+  - "Port {{ ssh_port }}"
+  - PermitRootLogin prohibit-password
+  - PubkeyAuthentication yes
+  - PasswordAuthentication no
+  - PermitEmptyPasswords no
+  - ClientAliveInterval  1200
+  - ClientAliveCountMax 3
+
+fail2ban_bantime: 1h
+fail2ban_maxretry: 3
+fail2ban_nginx_filter:
+  - nginx-noscript
+  - nginx-nohome
+  - nginx-noproxy
+
+php_version: 8.0
+php_upload_max_filesize: 512M
+php_post_max_size: 512M
+php_memory_limit: 512M
+

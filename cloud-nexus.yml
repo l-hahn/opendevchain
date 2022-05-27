@@ -1,0 +1,60 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - backup
+    - java
+    - nginx
+    - nexus
+    - checkmk
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+      - nginx
+    
+    mount_points:
+      - path: "{{ nexus_data_location }}"
+        dev: /dev/sdb
+
+    nexus_java_home: "{{ cloud_apps }}/java_jdk/jdk8u322-b06"
+
+    nexus_http_port: 8081
+    nexus_http_host: localhost
+    nexus_data_location: "{{ cloud_storage }}/sonatype-nexus-data"
+    nexus_website:
+      domain: "artifact.{{ domain_external }}"
+      letsencrypt: true
+      state: present
+      owner: sonanexus
+      port: 80
+      root_setup: false
+      index: noindex
+      root: noroot
+      options:
+        access_log: "/var/log/nginx/artifact.{{ domain_external }}-access.log"
+        error_log: "/var/log/nginx/artifact.{{ domain_external }}-error.log"
+        client_max_body_size: 1G
+      locations:
+        - location: "/"
+          options: |
+            proxy_pass http://{{ nexus_http_host }}:{{ nexus_http_port }}/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    # Websites
+    web_sites:
+      - "{{ nexus_website }}"
+
+    # Backup
+    backup_targets:
+      file:
+        - "{{ nexus_data_location }}"
+        - "/etc/letsencrypt"
+
+  vars_files:
+    - "group_vars/environment.yaml"

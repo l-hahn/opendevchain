@@ -1,0 +1,12 @@
+---
+cloud_update: false
+psql_user: postgres
+
+db_configs:
+  - type: pgsql
+    name: db_name
+    user: db_user
+    pass: db_user_password
+    priv: all
+
+postgresql_version: postgresql-13

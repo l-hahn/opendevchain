@@ -1,0 +1,14 @@
+---
+- name: pull nats docker image
+  docker_image:
+    name: "nats:latest"
+    source: pull
+
+- name: run docker container
+  docker_container:
+    name: NATSSERVER
+    image: "nats:latest"
+    state: started
+    ports:
+      - 4222:4222
+    restart_policy: always

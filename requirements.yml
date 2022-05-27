@@ -1,0 +1,63 @@
+---
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-authentik.git
+  name: authentik
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-backup.git
+  name: backup
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-basis.git
+  name: basis
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-checkmk.git
+  name: checkmk
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-docker.git
+  name: docker
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-easyrsa.git
+  name: easy-rsa
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-gitea.git
+  name: gitea
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-java.git
+  name: java
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-jenkins.git
+  name: jenkins
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-mailcow.git
+  name: mailcow
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-mariadb.git
+  name: mariadb
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-nextcloud.git
+  name: nextcloud
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-nexus.git
+  name: nexus
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-nginx.git
+  name: nginx
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-openproject.git
+  name: openproject
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-php.git
+  name: php
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-postgresql.git
+  name: postgres
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-nextcloud-signaling.git
+  name: signaling
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-vault.git
+  name: vault
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-vpn.git
+  name: vpn
+
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-wordpress.git
+  name: wordpress

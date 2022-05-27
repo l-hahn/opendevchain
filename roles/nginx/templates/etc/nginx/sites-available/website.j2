@@ -1,0 +1,74 @@
+{% if website.pre_options is defined %}
+{{ website.pre_options }}
+{% endif %}
+server {
+{% if website.domain is iterable and (website.domain is not mapping and website.domain is not string) %}
+        server_name {{ website.domain | join(' ') }};
+        
+{% else %}
+        server_name {{ website.domain }};
+{% endif %}
+{% if website.root is not defined %}
+        root {{ www_root }}/{{ website.domain }}/{{ website.subroot | default('') }};
+{% elif website.root != 'noroot' %}
+        root {{ website.root }};
+{% endif %}
+{% if website.index is not defined %}
+        index index.html index.php index.htm;
+{% elif website.index != 'noindex' %}
+        index {{ website.index | join(' ') }};
+{% endif %}
+
+{% if website.options is defined %}
+{% for key in website.options.keys() %}
+        {{ key }} {{ website.options[key] }};
+{% endfor %}
+{% endif %}
+
+{% if website.add_header is defined %}
+{% for header in website.add_header %}
+        add_header {{ header }};
+{% endfor %}
+{% endif %}
+
+{% for www_location in website.locations | default(default_locations) %}
+        location {{ www_location.location | default('/') }} {
+                {{ www_location.options | default('try_files $uri $uri/ =404;') | indent(width=16, first=False) }}
+        }
+{% endfor %}
+
+        listen {% if use_ssl is defined and use_ssl %}443 ssl{% else %}{{ website.port | default(80) }}{% endif %}{% if website.port_option is defined and website.port_option != '' %}{{ website.port_option }}{% endif %};
+        listen [::]:{% if use_ssl is defined and use_ssl %}443 ssl{% else %}{{ website.port | default(80) }}{% endif %}{% if website.port_option is defined and website.port_option != '' %}{{ website.port_option }}{% endif %};
+{% if use_ssl is defined and use_ssl %}
+        ssl_certificate /etc/letsencrypt/live/{% if website.domain is not string and website.domain is iterable %}{{ website.domain[0] }}{% else %}{{ website.domain }}{% endif %}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{% if website.domain is not string and website.domain is iterable %}{{ website.domain[0] }}{% else %}{{ website.domain }}{% endif %}/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+{% endif %}
+}
+{% if use_ssl is defined and use_ssl %}
+server {
+{% if website.domain is iterable and website.domain is not string %}
+{% for domain in website.domain %}
+        if ($host = {{ domain }}) {
+                return 301 https://$host$request_uri;
+        }
+{% endfor %}
+{% else %}
+        if ($host = {{ website.domain }}) {
+                return 301 https://$host$request_uri;
+        }
+{% endif %}
+        listen {{ website.port | default(80) }};
+        listen [::]:{{ website.port | default(80) }};
+{% if website.domain is iterable and (website.domain is not mapping and website.domain is not string) %}
+        server_name {{ website.domain | join(' ') }};
+{% else %}
+        server_name {{ website.domain }};
+{% endif %}
+        return 404;
+}
+{% endif %}
+{% if website.post_options is defined %}
+{{ website.post_options }}
+{% endif %}

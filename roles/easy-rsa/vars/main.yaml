@@ -1,0 +1,7 @@
+---
+easy_rsa_home: "/usr/share/easy-rsa"
+easy_rsa_servers_active: "{{ easy_rsa_servers | json_query('[?state==`present`].name') }}"
+easy_rsa_clients_active: "{{ easy_rsa_clients | json_query('[?state==`present`].name') }}"
+
+easy_rsa_entities_active: "{{ (easy_rsa_servers + easy_rsa_clients) | json_query('[?state==`present`].name') }}"
+easy_rsa_entities_passive: "{{ (easy_rsa_servers + easy_rsa_clients) | json_query('[?state!=`present`].name') }}"

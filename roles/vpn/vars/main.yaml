@@ -1,0 +1,43 @@
+---
+sysctl_path: "/etc/"
+sysctl_conf: "{{ sysctl_path }}/sysctl.conf"
+
+vpn_doc_examples: /usr/share/doc/openvpn/examples/sample-config-files/
+
+vpn_home: "/etc/openvpn"
+
+vpn_clients_active: "{{ vpn_clients | json_query('[?state==`present`].name') }}"
+vpn_clients_passive: "{{ vpn_clients | json_query('[?state!=`present`].name') }}"
+
+vpn_tlsauth_key: ta.key
+vpn_tlsauth_key_file: "{{ vpn_home }}/server/{{ vpn_tlsauth_key }}"
+
+vpn_server_conf:
+  - "port {{ vpn_port }}"
+  - "proto {{ vpn_protocol }}"
+  - dev tun
+  - "ca {{ vpn_home }}/server/ca.crt"
+  - "cert {{ vpn_home }}/server/{{ vpn_server }}.crt"
+  - "key {{ vpn_home }}/server/{{ vpn_server }}.key"
+  - "dh {{ vpn_home }}/server/dh.pem"
+  - topology subnet
+  - "server {{ vpn_cidr }} {{ vpn_mask }}"
+  - cipher AES-256-CBC
+  - "tls-auth {{ vpn_home }}/server/ta.key 0"
+  - tls-version-min 1.2
+  - tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384:TLS-DHE-RSA-WITH-AES-256-CBC-SHA256:TLS-DHE-RSA-WITH-AES-128-GCM-SHA256:TLS-DHE-RSA-WITH-AES-128-CBC-SHA256
+  - auth SHA512
+  - auth-nocache
+  - keepalive 20 60
+  - persist-key
+  - persist-tun
+  - client-to-client
+  - comp-lzo
+  - user nobody
+  - group nogroup
+  - "log-append {{ vpn_log }}"
+  - verb 3
+
+vpn_server_conf_off:
+  - explicit-exit-notify 1
+  

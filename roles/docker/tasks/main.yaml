@@ -1,0 +1,41 @@
+---
+# Basics
+- name: install requirements for docker
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg2
+      - software-properties-common
+      - curl
+
+# Docker
+- name: install docker repository key
+  apt_key: 
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: install docker repository
+  apt_repository:
+    repo: "deb [arch={{ ansible_kernel.split('-')[-1] }}] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: install docker (docker-ce + docker-ce-cli)
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - python3-docker
+
+# Docker Compose
+- name: download latest docker
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-{{ ansible_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: 0755
