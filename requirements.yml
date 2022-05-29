@@ -23,6 +23,9 @@
 - src: git+https://git.opendevchain.de/OpenDevChain/cloud-gocd.git
   name: gocd
 
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-gocd-agent.git
+  name: gocd-agent
+
 - src: git+https://git.opendevchain.de/OpenDevChain/cloud-java.git
   name: java
 

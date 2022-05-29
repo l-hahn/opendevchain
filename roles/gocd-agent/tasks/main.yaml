@@ -1,0 +1,79 @@
+---
+- name: install GoCD recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "unzip"
+
+- name: setup GoCD group
+  group:
+    name: "{{ gocd_usr }}"
+    state: "present"
+
+- name: setup Gocd user
+  user:
+    name: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    groups:
+      - "{{ gocd_grp }}"
+    comment: Virtual GocD User
+    shell: /sbin/nologin
+    state: present
+    system: yes
+
+- name: setup GoCD directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    mode: 0750
+  loop:
+    - "{{ gocd_main }}"
+
+- name: download GoCD Agent and unarchive
+  unarchive:
+    src: "{{ gocd_source }}/{{ gocd_agent_file }}"
+    dest: "{{ gocd_main }}"
+    remote_src: yes
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    mode: "o="
+    creates: "{{ gocd_inst }}"
+  register: gocd_installation
+
+- name: configure GoCD wrapper properties
+  lineinfile:
+    path: "{{ gocd_inst }}/wrapper-config/wrapper-properties.conf"
+    regexp: "^(#\\s*|){{ item.key }}="
+    line: "{{ item.key }}={{item.value}}"
+  loop:
+    - key: wrapper.java.command
+      value: "{{ gocd_java_home }}/bin/java"
+    - key: wrapper.app.parameter.101
+      value: "{{ gocd_server }}"
+    - key: set.AGENT_STARTUP_ARGS
+      value: "-Xms{{ gocd_agent_java_xmx }} -Xmx{{ gocd_agent_java_xmx }}"
+
+- name: link installation dir
+  file:
+    state: link
+    src: "{{ gocd_inst }}"
+    dest: "{{ gocd_link }}"
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+
+- name: setup GoCD agent systemd unit
+  template:
+    src: etc/systemd/system/gocd-agent.service.j2
+    dest: /etc/systemd/system/gocd-agent.service
+  notify: restart gocd-agent
+
+- name: enable GoCD agent systemd unit
+  systemd:
+    name: gocd-agent
+    enabled: yes
+    daemon_reload: yes
+    state: started

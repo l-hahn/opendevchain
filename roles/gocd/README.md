@@ -1,3 +1,3 @@
 # cloud-gocd
 
-Ansible role to prive GoCD as an alternative to Jenkins for CI/CD.
+Ansible role to provide GoCD as an alternative to Jenkins for CI/CD.

@@ -1,0 +1,7 @@
+---
+gocd_main: "{{ cloud_apps }}/gocd-agent"
+gocd_inst: "{{ gocd_main }}/go-agent-{{ gocd_version }}"
+gocd_link: "{{ gocd_main }}/inst"
+
+gocd_usr: gocd
+gocd_grp: "{{ gocd_usr }}"

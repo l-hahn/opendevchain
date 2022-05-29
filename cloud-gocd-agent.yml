@@ -1,0 +1,20 @@
+- hosts: local
+  connection: local
+  roles:
+    - basis
+    - java
+    - gocd-agent
+    - checkmk
+
+
+  vars:
+    users_local: [] #some local users only specific to this node!
+    users: "{{ users_local + users_admin }}"
+
+    fail2ban_activate_modules:
+      - sshd
+    
+    gocd_server: "https://build.{{ domain_external }}/go"
+
+  vars_files:
+    - "group_vars/{{ ansible_local.preferences.ansible.environment }}.yaml"

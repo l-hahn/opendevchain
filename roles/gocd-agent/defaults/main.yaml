@@ -1,0 +1,23 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
+domain_external: "my-domain.tld"
+
+java_home: "{{ cloud_apps }}/java_jdk/java"
+
+www_group: www-data
+
+
+gocd_version: 22.1.0
+gocd_build: 13913
+
+gocd_source: "https://download.gocd.org/binaries/{{ gocd_version }}-{{ gocd_build }}/generic"
+gocd_agent_file: "go-agent-{{ gocd_version }}-{{ gocd_build }}.zip"
+
+gocd_java_home: "{{ java_home }}"
+gocd_agent_java_xmx: 1024m
+gocd_agent_java_xms: 128m
+
+gocd_server: "https://gocd.{{ domain_external }}/go"

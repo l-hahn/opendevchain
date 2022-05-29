@@ -1,0 +1,5 @@
+---
+- name: restart gocd-agent
+  systemd:
+    name: gocd-agent
+    state: restarted
