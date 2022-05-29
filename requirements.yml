@@ -20,6 +20,9 @@
 - src: git+https://git.opendevchain.de/OpenDevChain/cloud-gitea.git
   name: gitea
 
+- src: git+https://git.opendevchain.de/OpenDevChain/cloud-gocd.git
+  name: gocd
+
 - src: git+https://git.opendevchain.de/OpenDevChain/cloud-java.git
   name: java
 
