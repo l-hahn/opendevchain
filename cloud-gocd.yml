@@ -21,6 +21,8 @@
       - path: "{{ gocd_artifact_location }}"
         dev: /dev/sdb
     
+    gocd_admin_user: gocd_admin
+    gocd_admin_pass: VeryCoolAdminPassword!
     gocd_artifact_location: "{{ cloud_storage }}/gocd-artifacts"
     gocd_website:
       domain: "build.{{ domain_external }}"

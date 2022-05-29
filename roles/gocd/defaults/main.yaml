@@ -19,3 +19,6 @@ gocd_artifact_location: "{{ cloud_storage }}/gocd/gocd-artifacts"
 
 gocd_java_home: "{{ java_home }}"
 gocd_java_xmx: 4G
+
+gocd_admin_user: gocd_admin
+gocd_admin_pass: VerySecurePasswrd!

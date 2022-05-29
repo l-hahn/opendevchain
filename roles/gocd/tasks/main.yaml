@@ -6,6 +6,8 @@
     install_recommends: yes
     pkg:
       - "unzip"
+      - "apache2-utils"
+      - "python3-passlib"
 
 - name: setup GoCD group
   group:
@@ -32,7 +34,17 @@
     mode: 0750
   loop:
     - "{{ gocd_main }}"
+    - "{{ gocd_data }}"
     - "{{ gocd_home }}"
+
+- name: setup GoCD admin
+  htpasswd:
+    path: "{{ gocd_home }}/passwd.properties"
+    name: "{{ gocd_admin_user }}"
+    password: "{{ gocd_admin_pass }}"
+    owner: root
+    group: "{{ gocd_grp }}"
+    mode: 0640
 
 - name: download GoCD and unarchive
   unarchive:
@@ -86,6 +98,7 @@
 - name: configure GoCD config after config setup by server
   lineinfile:
     path: "{{ gocd_inst }}/config/cruise-config.xml"
-    regexp: '^(\\s*)<artifactsDir>(.*)</artifactsDir>$'
-    line: "\\g<1><artifactsDir>{{ gocd_artifact_location }}</artifactsDir>"
+    regexp: '^(\s*)<artifactsDir>(.*)</artifactsDir>$'
+    line: '\1<artifactsDir>{{ gocd_artifact_location }}</artifactsDir>'
+    backrefs: yes
   notify: restart gocd
