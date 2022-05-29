@@ -1,0 +1,91 @@
+---
+- name: install GoCD recommendations
+  apt:
+    update_cache: yes
+    state: "{% if cloud_update | bool %}latest{% else %}present{% endif %}"
+    install_recommends: yes
+    pkg:
+      - "unzip"
+
+- name: setup GoCD group
+  group:
+    name: "{{ gocd_usr }}"
+    state: "present"
+
+- name: setup Gocd user
+  user:
+    name: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    groups:
+      - "{{ gocd_grp }}"
+    comment: Virtual GocD User
+    shell: /sbin/nologin
+    state: present
+    system: yes
+
+- name: setup GoCD directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    mode: 0750
+  loop:
+    - "{{ gocd_main }}"
+    - "{{ gocd_home }}"
+
+- name: download GoCD and unarchive
+  unarchive:
+    src: "{{ gocd_source }}/{{ gocd_file }}"
+    dest: "{{ gocd_main }}"
+    remote_src: yes
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+    mode: "o="
+    creates: "{{ gocd_inst }}"
+  register: gocd_installation
+
+- name: configure GoCD wrapper properties
+  lineinfile:
+    path: "{{ gocd_inst }}/wrapper-config/wrapper-properties.conf"
+    regexp: "^(#\\s*|){{ item.key }}="
+    line: "{{ item.key }}={{item.value}}"
+  loop:
+    - key: wrapper.java.command
+      value: "{{ gocd_java_home }}/bin/java"
+    - key: wrapper.java.additional.105
+      value: "-Xmx{{ gocd_java_xmx }}"
+
+- name: link installation dir
+  file:
+    state: link
+    src: "{{ gocd_inst }}"
+    dest: "{{ gocd_link }}"
+    owner: "{{ gocd_usr }}"
+    group: "{{ gocd_grp }}"
+
+- name: setup GoCD systemd unit
+  template:
+    src: etc/systemd/system/gocd.service.j2
+    dest: /etc/systemd/system/gocd.service
+  notify: restart gocd
+
+- name: enable gocd systemd unit
+  systemd:
+    name: gocd
+    enabled: yes
+    daemon_reload: yes
+    state: started
+
+- name: Wait for GoCD to be started in order to configure artifact store
+  wait_for:
+    port: 8153
+    delay: 10
+  when: gocd_installation.changed
+
+- name: configure GoCD config after config setup by server
+  lineinfile:
+    path: "{{ gocd_inst }}/config/cruise-config.xml"
+    regexp: '^(\\s*)<artifactsDir>(.*)</artifactsDir>$'
+    line: "\\g<1><artifactsDir>{{ gocd_artifact_location }}</artifactsDir>"
+  notify: restart gocd

@@ -1,6 +1,8 @@
 ---
-cloud_update: false
 cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
 ssh_port: 1802
 
 # clients push only daily backup

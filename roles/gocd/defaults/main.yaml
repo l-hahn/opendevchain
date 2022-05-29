@@ -1,0 +1,21 @@
+---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
+
+java_home: "{{ cloud_apps }}/java_jdk/java"
+
+www_group: www-data
+
+
+gocd_version: 22.1.0
+gocd_build: 13913
+
+gocd_source: "https://download.gocd.org/binaries/{{ gocd_version }}-{{ gocd_build }}/generic"
+gocd_file: "go-server-{{ gocd_version }}-{{ gocd_build }}.zip"
+
+gocd_artifact_location: "{{ cloud_storage }}/gocd/gocd-artifacts"
+
+gocd_java_home: "{{ java_home }}"
+gocd_java_xmx: 4G

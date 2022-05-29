@@ -9,6 +9,9 @@ cloud_host_group: server
 cloud_control_version: 1.0.0
 cloud_control_name: cloud-control
 cloud_git_branch_main: main
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
 
 cloud_tzdata: Europe/Berlin
 

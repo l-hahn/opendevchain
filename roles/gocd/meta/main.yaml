@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: gocd
+  namespace: hahn-cloud
+  author: Lars Hahn
+  company: OpenDevChain
+  license: MIT
+  description: Role to setup GoCD for CI/CD
+  min_ansible_version: 2.7
+  platforms:
+    - name: Debian
+      versions:
+        - 11
+  galaxy_tags:
+    - gocd
+dependencies:
+  - java

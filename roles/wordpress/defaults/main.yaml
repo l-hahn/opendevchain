@@ -1,6 +1,8 @@
 ---
-cloud_update: false
 cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
 download_folder: "{{ cloud_apps }}/download-tmp"
 shared_group: "cloud"
 

@@ -1,6 +1,8 @@
 ---
 cloud_apps: /opt
 cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
 
 vault_source: https://releases.hashicorp.com/vault
 vault_version: 1.9.3

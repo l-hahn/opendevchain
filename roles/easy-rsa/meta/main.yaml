@@ -3,7 +3,7 @@ galaxy_info:
   role_name: easy-rsa
   namespace: hahn-cloud
   author: Lars Hahn
-  company: Data Learning
+  company: OpenDevChain
   license: MIT
   description: Role to setup an easy-rsa for PKI, CA and certificates.
   min_ansible_version: 2.7

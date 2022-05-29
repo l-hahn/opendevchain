@@ -1,4 +1,10 @@
 ---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
+cloud_update: false
+
+
 php_version: 8.0
 
 php_modules: []

@@ -1,4 +1,7 @@
 ---
+cloud_apps: /opt
+cloud_storage: /opt/storage
+cloud_stage: prod
 cloud_update: false
 
 mariadb_version: 10.7.1

@@ -3,7 +3,7 @@ galaxy_info:
   role_name: gitea
   namespace: hahn-cloud
   author: Lars Hahn
-  company: Data Learning
+  company: OpenDevChain
   license: MIT
   description: Role to setup gitea Git Server
   min_ansible_version: 2.7

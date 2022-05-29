@@ -3,7 +3,7 @@ galaxy_info:
   role_name: mailcow
   namespace: hahn-cloud
   author: Lars Hahn
-  company: Data Learning
+  company: OpenDevChain
   license: MIT
   description: Role to setup mailcow based on docker.
   min_ansible_version: 2.7

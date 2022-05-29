@@ -1,0 +1,8 @@
+---
+gocd_main: "{{ cloud_apps }}/gocd"
+gocd_inst: "{{ gocd_main }}/go-server-{{ gocd_version }}"
+gocd_link: "{{ gocd_main }}/inst"
+gocd_home: "{{ gocd_artifact_location }}"
+
+gocd_usr: gocd
+gocd_grp: "{{ gocd_usr }}"

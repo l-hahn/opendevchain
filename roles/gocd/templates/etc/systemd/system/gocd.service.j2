@@ -1,0 +1,15 @@
+[Unit]
+Description=go-server
+After=syslog.target
+
+[Service]
+Type=forking
+ExecStart={{ gocd_link }}/bin/go-server start sysd
+ExecStop={{ gocd_link }}/bin/go-server stop sysd
+User={{ gocd_usr }}
+Group={{ gocd_grp }}
+KillMode=control-group
+Environment=SYSTEMD_KILLMODE_WARNING=true
+
+[Install]
+WantedBy=multi-user.target
